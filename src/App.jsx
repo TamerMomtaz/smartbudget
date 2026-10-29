@@ -169,10 +169,48 @@ function Field({ a, set, canEdit, k, label, hint, type = 'text', area }) {
   return <label className="f"><span>{label}{hint ? ' — ' + hint : ''}</span>{area ? <textarea value={a[k] || ''} disabled={!canEdit} onChange={e => set(k, e.target.value)} /> : <input type={type} value={a[k] ?? ''} disabled={!canEdit} onChange={e => set(k, e.target.value)} />}</label>
 }
 
+// words that hint an ask belongs to an ExCom consolidated idea (EN + AR)
+const REG_WORDS = {
+  ENGINE: ['brake fluid', 'فرامل', 'engine coolant', 'antifreeze'],
+  F1: ['pdpl', 'data protection', 'privacy', 'حماية البيانات', 'خصوصية'],
+  F2: ['trademark', 'forma', 'فورما', 'علامة تجارية'],
+  F3: ['tracker', 'lab record', 'lims', 'تتبع', 'سجلات المعمل'],
+  F4: ['mechanic database', 'trader database', 'site map', 'قاعدة بيانات', 'خريطة'],
+  P1: ['marine', 'ship', 'vessel', 'مارين', 'سفن', 'بحري'],
+  P2: ['industrial coolant', 'كولانت صناعي'],
+  P3: ['rust', 'sensor cleaner', 'صدأ', 'حساسات'],
+  P4: ['motorcycle', '4t', 'موتوسيكل'],
+  P5: ['turbo', 'cvt', 'تربو'],
+  P6: ['vii', 'viscosity index', 'لزوجة'],
+  P7: ['raw material', 'base oil trading', 'خامات'],
+  P8: ['ev coolant', 'heat lab', 'electric vehicle', 'كهربائية', 'هيت لاب'],
+  B1: ['credit', 'ائتمان'],
+  B2: ['certified mechanic', 'mechanics programme', 'ميكانيكي'],
+  B3: ['workshop portal', 'b2b portal', 'بوابة', 'ورش'],
+  B4: ['filter', 'batter', 'فلاتر', 'بطاري'],
+  B5: ['academy', 'أكاديمية'],
+  B6: ['qr', 'authentic', 'counterfeit', 'consumer app', 'تقليد', 'أصلي'],
+  A1: ['site scoring', 'site-scoring', 'تقييم المواقع'],
+  A2: ['pilot site', 'مواقع تجريبية'],
+  A3: ['ev charg', 'charging', 'charger', 'شحن', 'شاحن'],
+  A4: ['hard discount', 'hard-discount', 'خصم'],
+  A5: ['e-bike', 'ebike', 'دراجة', 'دراجات'],
+  A6: ['behind the chargers', 'خلف الشواحن'],
+  B7: ['home service', 'home-service', 'خدمة منزلية', 'منزل'],
+  B8: ['predictive', 'fluid-care', 'تنبؤ'],
+  E1: ['east africa', 'bonded hub', 'أفريقيا', 'افريقيا'],
+}
+function matchRegister(rows, text) {
+  const s = (text || '').toLowerCase()
+  if (s.trim().length < 3) return []
+  return rows.map(r => ({ r, n: (REG_WORDS[r.code] || []).filter(w => s.includes(w)).length })).filter(x => x.n).sort((x, y) => y.n - x.n).slice(0, 2).map(x => x.r)
+}
+
 function AskForm({ t, lang, profile, refd, ask, show, onDone }) {
   const blank = { title: '', lane: '', register_code: '', lane_other: '', what_text: '', capex_class: 'light', capex_amount: '', quote_decides: false, quarter: 'Q1 2027', opex_people: '', opex_training: '', opex_consumables: '', opex_maintenance: '', opex_licences: '', opex_other: '', opex_notes: '', return_text: '', return_when: '', measure_text: '', measure_when: '', if_not_funded: '', what_we_stop: '', status: 'draft', department_id: profile.role === 'head' ? profile.department_id : null }
   const [a, setA] = useState({ ...blank, ...ask })
   const [files, setFiles] = useState([]); const [hist, setHist] = useState([]); const [busy, setBusy] = useState(false)
+  const [pick, setPick] = useState(false)
   const set = (k, v) => setA(x => ({ ...x, [k]: v }))
   const deps = myDeps(profile, refd)
   const mine = deps.some(d => d.id === a.department_id)
@@ -187,7 +225,7 @@ function AskForm({ t, lang, profile, refd, ask, show, onDone }) {
   }, [a.id])
   const num = (v) => (v === '' || v == null ? null : Number(v))
   const payload = (status) => ({
-    cycle_id: refd.cycle.id, department_id: a.department_id, owner_id: profile.id, title: a.title.trim(), lane: a.lane || null, register_code: a.lane === 'other' ? null : a.register_code || null, lane_other: a.lane === 'other' ? (a.lane_other || '').trim() || null : null,
+    cycle_id: refd.cycle.id, department_id: a.department_id, owner_id: profile.id, title: a.title.trim(), lane: a.register_code === 'ENGINE' ? 'engine' : a.register_code ? 'station' : 'other', register_code: a.register_code || null, lane_other: (a.lane_other || '').trim() || null,
     what_text: a.what_text, capex_class: a.capex_class, capex_amount: a.quote_decides ? null : num(a.capex_amount), quote_decides: !!a.quote_decides, quarter: a.quarter,
     ...Object.fromEntries(OPEX.map(k => [k, num(a[k]) ?? 0])), opex_notes: a.opex_notes, return_text: a.return_text, return_when: a.return_when, measure_text: a.measure_text, measure_when: a.measure_when,
     if_not_funded: a.if_not_funded, what_we_stop: a.what_we_stop, status, submitted_at: status === 'submitted' ? new Date().toISOString() : a.submitted_at || null,
@@ -197,8 +235,8 @@ function AskForm({ t, lang, profile, refd, ask, show, onDone }) {
     if (!a.title.trim()) { show(t('missing') + ': ' + t('s_title')); return }
     if (!a.department_id) { show(t('missing') + ': ' + t('department')); return }
     if (status === 'submitted' || status === 'with_director') {
-      const need = [['lane', 's_lane'], ['what_text', 's_what'], ['return_text', 's_return'], ['measure_text', 's_measure'], ['if_not_funded', 's_ifnot']].filter(([k]) => !a[k]).map(([, l]) => t(l))
-      if (a.lane === 'other' && !(a.lane_other || '').trim()) need.push(t('s_other'))
+      const need = [['what_text', 's_what'], ['return_text', 's_return'], ['measure_text', 's_measure'], ['if_not_funded', 's_ifnot']].filter(([k]) => !a[k]).map(([, l]) => t(l))
+      if (!a.register_code && !(a.lane_other || '').trim()) need.push(t('s_other'))
       if (!a.quote_decides && !a.capex_amount) need.push(t('capex_amount'))
       if (need.length) { show(t('missing_send') + ': ' + need.join(', ')); return }
     }
@@ -227,7 +265,9 @@ function AskForm({ t, lang, profile, refd, ask, show, onDone }) {
   const del = async () => { if (!a.id || !confirm('?')) return; await supabase.from('asks').delete().eq('id', a.id); onDone() }
   const withdraw = async () => { if (!confirm('?')) return; await supabase.from('asks').update({ status: 'withdrawn' }).eq('id', a.id); await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'withdrawn' }); onDone() }
   const oy = opexYear(a), cx = a.quote_decides ? 0 : capex(a)
-  const reg = refd.register.filter(r => a.lane === 'engine' ? r.code === 'ENGINE' : r.code !== 'ENGINE')
+  const regLabel = r => (r.code === 'ENGINE' ? '' : r.code + ' · ') + (lang === 'ar' && r.title_ar ? r.title_ar : r.title_en)
+  const linked = refd.register.find(r => r.code === a.register_code)
+  const hints = linked ? [] : matchRegister(refd.register, [a.lane_other, a.title, a.what_text].join(' '))
   return <>
     <div className="btns" style={{ marginTop: 0 }}><button className="btn" onClick={onDone}>← {t('back')}</button>{a.status && <span className={'pill ' + a.status} style={{ alignSelf: 'center' }}>{t(a.status)}</span>}</div>
     {a.director_note && ['returned', 'draft', 'with_director'].includes(st) && <div className="card o"><p className="k">{t('director_note')}</p><p>{a.director_note}</p></div>}
@@ -235,14 +275,13 @@ function AskForm({ t, lang, profile, refd, ask, show, onDone }) {
       {profile.role !== 'head' && <label className="f"><span>{t('department')}</span><DeptSelect value={a.department_id} onChange={v => set('department_id', v)} deps={deps} refd={refd} lang={lang} disabled={!canEdit} blank /></label>}
     </div>
     <div className="card"><p className="k">{t('s_lane')}</p>
-      <div className="row">
-        <button className={'btn ' + (a.lane === 'engine' ? 'n' : '')} disabled={!canEdit} onClick={() => { set('lane', 'engine'); set('register_code', 'ENGINE') }}>{t('lane_engine')}</button>
-        <button className={'btn ' + (a.lane === 'station' ? 'n' : '')} disabled={!canEdit} onClick={() => { set('lane', 'station'); if (a.register_code === 'ENGINE') set('register_code', '') }}>{t('lane_station')}</button>
-        <button className={'btn ' + (a.lane === 'other' ? 'n' : '')} disabled={!canEdit} onClick={() => { set('lane', 'other'); set('register_code', '') }}>{t('lane_other')}</button>
-      </div>
-      <p className="m" style={{ fontSize: 13, marginTop: 6 }}>{t('lane_hint')}</p>
-      {a.lane === 'station' && <label className="f"><span>{t('s_register')}</span><select value={a.register_code || ''} disabled={!canEdit} onChange={e => set('register_code', e.target.value)}><option value="">—</option>{reg.map(r => <option key={r.code} value={r.code}>{r.code} · {lang === 'ar' && r.title_ar ? r.title_ar : r.title_en}</option>)}</select></label>}
-      {a.lane === 'other' && <Field a={a} set={set} canEdit={canEdit} k="lane_other" label={t('s_other')} hint={t('s_other_hint')} />}
+      <Field a={a} set={set} canEdit={canEdit} k="lane_other" label={t('s_other')} hint={t('s_other_hint')} />
+      {linked ? <div className="row" style={{ alignItems: 'center', gap: 8 }}><span className="pill">{t('linked_to')}: {regLabel(linked)}</span>{canEdit && <button className="btn" onClick={() => set('register_code', '')}>{t('unlink')}</button>}</div>
+        : <>
+          {canEdit && hints.map(r => <div key={r.code} className="card o" style={{ margin: '6px 0', padding: 10 }}>💡 {t('looks_like')} <b>{regLabel(r)}</b> <button className="btn" style={{ marginInlineStart: 8 }} onClick={() => set('register_code', r.code)}>{t('link_it')}</button></div>)}
+          {canEdit && !pick && <button className="btn" onClick={() => setPick(true)}>{t('link_excom')}</button>}
+          {canEdit && pick && <label className="f"><span>{t('s_register')}</span><select value="" onChange={e => { set('register_code', e.target.value); setPick(false) }}><option value="">—</option>{refd.register.map(r => <option key={r.code} value={r.code}>{regLabel(r)}</option>)}</select></label>}
+        </>}
       <Field a={a} set={set} canEdit={canEdit} k="what_text" label={t('s_what')} area />
     </div>
     <div className="card"><p className="k">{t('s_ask')}</p>
@@ -346,7 +385,7 @@ function Outputs({ t, lang, refd }) {
   const sums = rows.reduce((s, a) => { const g = a.status === 'green'; return { capex: s.capex + capex(a), opex: s.opex + opexYear(a), gc: s.gc + (g ? capex(a) : 0), go: s.go + (g ? opexYear(a) : 0) } }, { capex: 0, opex: 0, gc: 0, go: 0 })
   const xlsx = () => {
     const data = rows.map(a => { const tt = a.ask_totals || {}; const oy = opexYear(a); return {
-      Directorate: a.departments?.directorates?.name_en, Department: a.departments?.name_en, Title: a.title, Lane: a.lane, Register: a.register_code, 'Own goal (free)': a.lane_other, Quarter: a.quarter, 'Capex class': a.capex_class, 'CAPEX (EGP)': a.quote_decides ? null : capex(a), 'Quote decides': a.quote_decides ? 'yes' : '',
+      Directorate: a.departments?.directorates?.name_en, Department: a.departments?.name_en, Title: a.title, Lane: a.lane, Register: a.register_code, 'Goal (own words)': a.lane_other, Quarter: a.quarter, 'Capex class': a.capex_class, 'CAPEX (EGP)': a.quote_decides ? null : capex(a), 'Quote decides': a.quote_decides ? 'yes' : '',
       'OPEX people': a.opex_people, 'OPEX training': a.opex_training, 'OPEX consumables': a.opex_consumables, 'OPEX maintenance': a.opex_maintenance, 'OPEX licences': a.opex_licences, 'OPEX other': a.opex_other, 'OPEX / year': oy, 'Year-one total': capex(a) + oy,
       'What': a.what_text, 'Return': a.return_text, 'Return when': a.return_when, 'Measure': a.measure_text, 'Measure when': a.measure_when, 'If not funded': a.if_not_funded, 'What we stop': a.what_we_stop,
       'Score fit': tt.fit, 'Score evidence': tt.evidence, 'Score reversible': tt.reversible, 'Score payback': tt.payback, 'Score total': tt.total, 'Scorers': tt.scorers, Status: a.status, 'Submitted': a.submitted_at,
