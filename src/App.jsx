@@ -102,7 +102,7 @@ function Login({ t, lang, setLang, preview, onBack }) {
   const calm = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
   const [intro, setIntro] = useState(() => { try { return !calm && !sessionStorage.getItem('sb_intro') } catch { return !calm } })
   const [sound, setSnd] = useState(soundOn())
-  useEffect(() => { if (!intro) return; const id = setTimeout(() => endIntro(), 3400); return () => clearTimeout(id) }, [intro]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => { if (!intro) return; const id = setTimeout(() => endIntro(), 6200); return () => clearTimeout(id) }, [intro]) // eslint-disable-line react-hooks/exhaustive-deps
   const endIntro = () => { setIntro(false); try { sessionStorage.setItem('sb_intro', '1') } catch { /* private mode */ } }
   // sound is never automatic: it plays on the visitor's first click if they turned it on before
   useEffect(() => { if (!sound) return; const once = () => chime(); window.addEventListener('pointerdown', once, { once: true }); return () => window.removeEventListener('pointerdown', once) }, [sound])

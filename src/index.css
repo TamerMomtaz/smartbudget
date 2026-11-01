@@ -197,17 +197,17 @@ body.explain .tabs [data-help]{outline-offset:-4px}
 @keyframes sweep{from{transform:translate(-50%,-50%) rotate(-140deg)}to{transform:translate(-50%,-50%) rotate(220deg)}}
 @keyframes rise{from{opacity:0;transform:translateY(18px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
 @keyframes glow{0%,100%{filter:drop-shadow(0 0 10px rgba(226,169,59,.35))}50%{filter:drop-shadow(0 0 26px rgba(255,214,140,.75))}}
-@keyframes stageOut{0%,82%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-4%)}}
+@keyframes stageOut{0%,86%{opacity:1;transform:none}100%{opacity:0;transform:translateY(-4%)}}
 @keyframes ink{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 .stage{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow:hidden;cursor:pointer;
-  background:radial-gradient(900px 600px at 50% 45%,#123F5C 0%,#082638 55%,#03121D 100%);animation:stageOut 3.4s ease-in forwards}
+  background:radial-gradient(900px 600px at 50% 45%,#123F5C 0%,#082638 55%,#03121D 100%);animation:stageOut 6.2s ease-in forwards}
 .stage .beam{position:absolute;left:50%;top:44%;width:260vmax;height:260vmax;transform:translate(-50%,-50%);
-  background:conic-gradient(from 0deg,transparent 0deg,rgba(255,225,160,.0) 330deg,rgba(255,225,160,.32) 350deg,rgba(255,245,215,.55) 356deg,transparent 360deg);animation:sweep 3s cubic-bezier(.45,.05,.3,1) forwards;pointer-events:none}
-.stage .mark{position:relative;width:120px;height:136px;display:grid;place-items:center;animation:rise .9s .15s both,glow 2.4s 1s ease-in-out infinite}
+  background:conic-gradient(from 0deg,transparent 0deg,rgba(255,225,160,.0) 330deg,rgba(255,225,160,.32) 350deg,rgba(255,245,215,.55) 356deg,transparent 360deg);animation:sweep 5.4s cubic-bezier(.45,.05,.3,1) forwards;pointer-events:none}
+.stage .mark{position:relative;width:120px;height:136px;display:grid;place-items:center;animation:rise 1.4s .2s both,glow 2.6s 1.4s ease-in-out infinite}
 .stage .mark img{width:100%;height:auto}
-.stage .title{position:relative;font-size:46px;font-weight:800;color:#fff;letter-spacing:.5px;animation:ink 1.1s .9s both}
+.stage .title{position:relative;font-size:46px;font-weight:800;color:#fff;letter-spacing:.5px;animation:ink 1.8s 1.5s both}
 .stage .title span{background:linear-gradient(180deg,#FFE6A6,#E2A93B 55%,#B07A12);-webkit-background-clip:text;background-clip:text;color:transparent}
-.stage .sub{position:relative;color:#C9D6DF;font-size:19px;animation:rise .8s 1.5s both}
+.stage .sub{position:relative;color:#C9D6DF;font-size:19px;animation:rise 1.2s 2.8s both}
 .stage-btns{position:absolute;bottom:28px;inset-inline-end:28px;display:flex;gap:10px;animation:rise .6s .6s both}
 .rise{animation:rise .8s cubic-bezier(.2,.7,.2,1) var(--d,0s) both}
 .hero.land{position:relative;overflow:hidden;padding-bottom:64px}

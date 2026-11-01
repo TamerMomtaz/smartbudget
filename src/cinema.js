@@ -13,7 +13,7 @@ export function chime() {
     ;[[1046.5, 0.35], [1567.98, 0.75]].forEach(([f, at]) => { const o = ctx.createOscillator(), g = ctx.createGain(); o.type = 'triangle'; o.frequency.value = f
       g.gain.setValueAtTime(0, now + at); g.gain.linearRampToValueAtTime(0.12, now + at + 0.01); g.gain.exponentialRampToValueAtTime(0.0001, now + at + 2.2); o.connect(g); g.connect(out); o.start(now + at); o.stop(now + at + 2.3) })
     // then the name, spoken by the computer's own voice (quality depends on the voices installed on that PC or phone)
-    setTimeout(say, 1100)
+    setTimeout(say, 1600)
   } catch { /* no audio on this device */ }
 }
 function say() {
