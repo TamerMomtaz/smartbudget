@@ -84,6 +84,10 @@ function Login({ t, lang, setLang }) {
     setBusy(false); if (error) setErr(error.message); else setSent(true)
   }
   return <Shell t={t} lang={lang} setLang={setLang}>
+    <div className="landing">
+      <div className="hero land"><p className="k">{t('land_kicker')}</p><h1>{t('land_title')}</h1><p className="lead">{t('land_lead')}</p>
+        <div className="feats">{[['🧭', 'land_f1'], ['💰', 'land_f2'], ['🗳️', 'land_f3'], ['💡', 'land_f4']].map(([i, k]) => <div key={k} className="feat"><span>{i}</span><b>{t(k + '_t')}</b><p>{t(k)}</p></div>)}</div></div>
+    </div>
     <div className="wrap login">
       <div className="card center">
         <img src="/logo.png" alt="Al Manar" />
@@ -125,7 +129,7 @@ function Main({ t, lang, setLang, profile }) {
   }, [])
   const [toast, show] = useToast()
   return <Shell t={t} lang={lang} setLang={setLang} profile={profile} tabs={tabs} tab={tab} setTab={setTab}>
-    <div className="wrap">
+    <div className={'wrap' + (tab === 'people' ? ' wide' : '')}>
       {tab === 'asks' && ref.cycle && <Asks t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'room' && ref.cycle && <Room t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'budget' && <Budget t={t} lang={lang} profile={profile} refd={ref} show={show} />}
@@ -901,11 +905,11 @@ function People({ t, lang, refd, show }) {
   }
   const one = async (p) => { setBusy(true); if (await invite(p)) show(t('invite_ok') + ' ' + p.email); setBusy(false); load() }
   const all = async () => { setBusy(true); for (const p of list.filter(x => !x.last_seen_at && !x.invited_at && x.role !== 'pending')) { if (!(await invite(p))) break } setBusy(false); load() }
-  const place = (x, set) => x.role === 'head'
-    ? <DeptSelect value={x.department_id} onChange={v => set({ department_id: v })} deps={refd.departments} refd={refd} lang={lang} blank />
+  const place = (x, set) => (x.role === 'head' || x.role === 'pending')
+    ? <DeptSelect value={x.department_id} onChange={v => set(x.role === 'pending' && v ? { department_id: v, role: 'head' } : { department_id: v })} deps={refd.departments} refd={refd} lang={lang} blank />
     : (x.role === 'director' || x.role === 'admin')
       ? <select value={x.directorate_id || ''} onChange={e => set({ directorate_id: e.target.value ? Number(e.target.value) : null })}><option value="">—</option>{refd.directorates.map(g => <option key={g.id} value={g.id}>{nm(g)}</option>)}</select>
-      : <span className="m">—</span>
+      : <span className="m">{t('whole_company')}</span>
   const roles = (v, on) => <select value={v} onChange={e => on(e.target.value)}>{v === 'pending' && <option value="pending">{t('r_pending')}</option>}<option value="head">{t('r_head')}</option><option value="director">{t('r_director')}</option><option value="excom">{t('r_excom')}</option><option value="admin">{t('r_admin')}</option></select>
   const waiting = list.filter(x => !x.last_seen_at && !x.invited_at && x.role !== 'pending').length
   return <>
@@ -919,7 +923,7 @@ function People({ t, lang, refd, show }) {
         <div style={{ flex: 'none', alignSelf: 'end', marginBottom: 10 }}><button className="btn p">＋ {t('add_person')}</button></div>
       </form></div>
     {waiting > 0 && <div className="btns"><button className="btn p" disabled={busy} onClick={all}>✉ {t('invite_all')} ({waiting})</button></div>}
-    <div className="card" style={{ overflowX: 'auto' }}><table className="tb"><thead><tr><th>{t('email')}</th><th>{t('name')}</th><th>{t('role')}</th><th>{t('directorate')} / {t('department')}</th><th>{t('sits_room')}</th><th></th></tr></thead><tbody>
+    <div className="card" style={{ overflowX: 'auto' }}><table className="tb people"><thead><tr><th>{t('email')}</th><th>{t('name')}</th><th>{t('role')}</th><th>{t('directorate')} / {t('department')}</th><th>{t('sits_room')}</th><th></th></tr></thead><tbody>
       {list.map(p => <tr key={p.id}><td>{p.email}</td><td><input type="text" defaultValue={p.name || ''} onBlur={e => e.target.value !== (p.name || '') && upd(p, { name: e.target.value })} /></td>
         <td>{roles(p.role, v => upd(p, { role: v }))}</td>
         <td>{place(p, patch => upd(p, patch))}</td>
