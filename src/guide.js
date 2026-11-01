@@ -44,6 +44,13 @@ export const GUIDE = {
       { icon: '💸', h: '6 · Spending all year', p: [
         'Record a spend on its line as it happens, or ask for money that is not in a line yet. Each line shows **Left** = budget − spent − promised, and **Plan by now** shows what the monthly plan expected up to today, so a line running ahead of plan stands out early.',
       ] },
+      { icon: '🧮', h: 'The Budget page, button by button', p: [
+        '**🧮 Can I afford this?** Pick your department and a line, type an amount, and see at once whether it fits in what is left. If it does, send it as a request.',
+        '**🧾 Record spending:** write down money when it actually goes out, on the line it belongs to.',
+        '**📒 Our GL lines:** your department’s own budget lines for the year: add, edit, see last year next to each.',
+        '**📤 Upload a finance Excel** (admin): the one upload you normally need. Finance’s file fills budgets, spending so far, last year, the monthly plan and the CAPEX list.',
+        '**Other ways to load data** (admin, rarely needed): a plain sheet of budget lines, or a spending export from AX. **📥 Empty sheet** downloads a blank file with the right columns, so you can see what to fill.',
+      ], tip: '📤 means upload a file to smartBudget. 📥 means download a file to your computer.' },
       { icon: '🔐', h: 'Signing in', p: [
         'The first time, you get an e-mail from **noreply@smartbudget.devoneerstechnology.ai** with a sign-in link. It is safe: it only opens smartBudget, and it was sent because someone in Al Manar invited you or you asked for it.',
         'You stay signed in on that browser. To skip the e-mail next time, press 🔑 at the top once and set a password.',
@@ -99,6 +106,13 @@ export const GUIDE = {
       { icon: '💸', h: '٦ · الصرف طول السنة', p: [
         'سجّل المصروف على البند بتاعه أول بأول، أو اطلب فلوس مش موجودة في بند لسه. كل بند بيوريك **الفاضل** = الميزانية − المصروف − الموعود بيه، و**الخطة لحد دلوقتي** بتوريك الخطة الشهرية كانت متوقعة كام لحد النهارده، فالبند اللي بيصرف أسرع من الخطة بيبان بدري.',
       ] },
+      { icon: '🧮', h: 'صفحة الميزانية، زرار زرار', p: [
+        '**🧮 أقدر أصرف ده؟** اختار القسم والبند، اكتب المبلغ، وتعرف على طول هو داخل في الفاضل ولا لأ. ولو داخل، ابعته كطلب.',
+        '**🧾 سجّل مصروف:** اكتب الفلوس لما تطلع فعلاً، على البند بتاعها.',
+        '**📒 بنود الـGL بتاعتنا:** بنود ميزانية قسمك للسنة: ضيف، عدّل، وشوف السنة اللي فاتت جنب كل بند.',
+        '**📤 ارفع شيت المالية** (للأدمن): الرفع الوحيد اللي غالباً هتحتاجه. ملف المالية بيملا الميزانيات، المصروف لحد دلوقتي، السنة اللي فاتت، الخطة الشهرية وقايمة الـCAPEX.',
+        '**طرق تانية لإدخال البيانات** (للأدمن، نادراً): شيت عادي ببنود الميزانية، أو ملف مصروف من AX. **📥 شيت فاضي** بينزّل ملف فاضي بالأعمدة الصح، عشان تعرف تملا إيه.',
+      ], tip: '📤 يعني ترفع ملف على smartBudget. 📥 يعني تنزّل ملف على جهازك.' },
       { icon: '🔐', h: 'الدخول', p: [
         'أول مرة هيجيلك إيميل من **noreply@smartbudget.devoneerstechnology.ai** فيه لينك دخول. الإيميل آمن: بيفتح smartBudget بس، واتبعت لأن حد في المنار دعاك أو إنت طلبته.',
         'هتفضل داخل على المتصفح ده. ولو مش عايز الإيميل كل مرة، دوس 🔑 فوق مرة واحدة واعمل باسورد.',

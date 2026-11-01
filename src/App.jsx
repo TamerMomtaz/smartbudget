@@ -910,13 +910,11 @@ function Budget({ t, lang, profile, refd, show }) {
       </div> })}
 
     {isAdmin && <div className="card n" style={{ marginTop: 12 }}><p className="k">{t('b_admin')} · {year}</p><p className="m">{t('b_admin_hint')}</p>
-      <div className="btns">
-        <label className="btn p" data-help="b_up_finance">⬆ {t('b_up_finance')}<input type="file" accept=".xlsx,.xls" hidden onChange={upFinance} /></label>
-        <label className="btn">⬆ {t('b_up_lines')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upLines} /></label>
-        <label className="btn">⬆ {t('b_up_acts')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upActs} /></label>
-        <button className="btn ghost" onClick={() => template('lines')}>⬇ {t('b_tpl_lines')}</button>
-        <button className="btn ghost" onClick={() => template('actuals')}>⬇ {t('b_tpl_acts')}</button>
-      </div>
+      <div className="btns"><label className="btn p" data-help="b_up_finance">📤 {t('b_up_finance')}<input type="file" accept=".xlsx,.xls" hidden onChange={upFinance} /></label></div>
+      <details className="more" data-help="b_more"><summary>{t('b_more')}</summary>
+        <div className="morerow"><p className="m">{t('b_upl_hint')}</p><div className="btns"><label className="btn">📤 {t('b_up_lines')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upLines} /></label><button className="btn ghost" onClick={() => template('lines')}>📥 {t('b_tpl_lines')}</button></div></div>
+        <div className="morerow"><p className="m">{t('b_acts_hint')}</p><div className="btns"><label className="btn">📤 {t('b_up_acts')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upActs} /></label><button className="btn ghost" onClick={() => template('actuals')}>📥 {t('b_tpl_acts')}</button></div></div>
+      </details>
       {book && <FinanceImport t={t} lang={lang} refd={refd} profile={profile} book={book} show={show} onClose={() => setBook(null)} onDone={(y) => { setBook(null); if (y !== year) setYear(y); else B.load() }} />}</div>}
   </>
 }
