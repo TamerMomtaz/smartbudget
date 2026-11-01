@@ -1,7 +1,8 @@
-import { useEffect, useMemo, useState, useCallback, useRef } from 'react'
+import { Fragment, useEffect, useMemo, useState, useCallback, useRef } from 'react'
 import { supabase } from './supabase'
 import { t as T, fmt, approx } from './i18n'
 import * as XLSX from 'xlsx'
+import { readWorkbook, notice, planToDate } from './finance'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
 const OPEX = ['opex_people', 'opex_training', 'opex_consumables', 'opex_maintenance', 'opex_licences', 'opex_other']
@@ -257,7 +258,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const [pick, setPick] = useState(false)
   const [savedAt, setSavedAt] = useState(null); const [autoBusy, setAutoBusy] = useState(false)
   const dirty = useRef(false); const lock = useRef(false)
-  const set = (k, v) => { dirty.current = true; setA(x => ({ ...x, [k]: v })) }
+  const set = (k, v) => { dirty.current = true; setA(x => ({ ...x, [k]: v, ...((k === 'register_code' || k === 'budget_line_id') && v ? { link_none: false } : {}) })) }
   const deps = myDeps(profile, refd)
   // a card with no department yet is still the author's own (directors pick the department on the card)
   const mine = a.department_id ? deps.some(d => d.id === a.department_id) : true
@@ -277,7 +278,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
     cycle_id: refd.cycle.id, department_id: a.department_id, owner_id: profile.id, title: a.title.trim(), lane: a.register_code === 'ENGINE' ? 'engine' : a.register_code ? 'station' : 'other', register_code: a.register_code || null, lane_other: (a.lane_other || '').trim() || null,
     what_text: a.what_text, capex_class: a.capex_class, capex_amount: a.quote_decides ? null : num(a.capex_amount), quote_decides: !!a.quote_decides, quarter: a.quarter,
     ...Object.fromEntries(OPEX.map(k => [k, num(a[k]) ?? 0])), opex_notes: a.opex_notes, return_text: a.return_text, return_when: a.return_when, measure_text: a.measure_text, measure_when: a.measure_when,
-    if_not_funded: a.if_not_funded, what_we_stop: a.what_we_stop, budget_line_id: a.budget_line_id || null, status, submitted_at: status === 'submitted' ? new Date().toISOString() : a.submitted_at || null,
+    if_not_funded: a.if_not_funded, what_we_stop: a.what_we_stop, budget_line_id: a.budget_line_id || null, link_none: !!a.link_none && !a.register_code && !a.budget_line_id, status, submitted_at: status === 'submitted' ? new Date().toISOString() : a.submitted_at || null,
     ...(status === 'returned' ? { director_note: note.trim() } : {}),
   })
   // what is still empty before the card can be sent, with the step it lives on
@@ -364,12 +365,15 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
         {/* two optional links, side by side: which ExCom idea it serves, and which GL line pays for it */}
         {linked && <div className="row linked"><span className="pill">🎯 {t('linked_to')}: {regLabel(linked)}</span>{canEdit && <button className="btn ghost sm" onClick={() => set('register_code', '')}>{t('unlink')}</button>}</div>}
         {gl && <div className="row linked"><span className="pill green">📒 {t('gl_in')}: {glLabel(gl)} · {t('b_budget')} {fmt(gl.amount)} · {t('b_left')} {fmt(GB.line(gl.id).left)}</span>{canEdit && <button className="btn ghost sm" onClick={() => set('budget_line_id', null)}>{t('unlink')}</button>}</div>}
+        {a.link_none && !linked && !gl && <div className="row linked"><span className="pill">⚪ {t('none_pill')}</span>{canEdit && <button className="btn ghost sm" onClick={() => set('link_none', false)}>{t('unlink')}</button>}</div>}
+        {a.link_none && !linked && !gl && canEdit && <p className="m">✍️ {t('none_hint')}</p>}
         {canEdit && !linked && hints.map(r => <div key={r.code} className="card o hintc">💡 {t('looks_like')} <b>{regLabel(r)}</b> <button className="btn" onClick={() => set('register_code', r.code)}>{t('link_it')}</button></div>)}
         {canEdit && !gl && glHints.map(l => <div key={l.id} className="card o hintc">💡 {t('b_looks_gl')} <b>{glLabel(l)}</b> · {t('b_budget')} {fmt(l.amount)} · {t('b_left')} {fmt(GB.line(l.id).left)} <button className="btn" onClick={() => set('budget_line_id', l.id)}>{t('link_it')}</button></div>)}
-        {!gl && a.department_id && !glHints.length && a.title.trim().length > 4 && GB.lines.length > 0 && <p className="m">ℹ️ {t('b_not_in_gl')}</p>}
-        {canEdit && (!linked || !gl) && <div className="btns" style={{ marginTop: 6 }}>
+        {!gl && !a.link_none && a.department_id && !glHints.length && a.title.trim().length > 4 && GB.lines.length > 0 && <p className="m">ℹ️ {t('b_not_in_gl')}</p>}
+        {canEdit && (!linked || !gl) && !a.link_none && <div className="btns" style={{ marginTop: 6 }}>
           {!linked && <button className={'btn ' + (pick === 'excom' ? 'p' : '')} onClick={() => setPick(pick === 'excom' ? false : 'excom')}>🎯 {t('link_excom')}</button>}
           {!gl && <button className={'btn ' + (pick === 'gl' ? 'p' : '')} onClick={() => setPick(pick === 'gl' ? false : 'gl')}>📒 {t('link_gl')}</button>}
+          {!linked && !gl && <button className="btn" onClick={() => { set('link_none', true); setPick(false) }}>⚪ {t('link_none')}</button>}
         </div>}
         {canEdit && pick === 'excom' && !linked && <label className="f"><span>{t('s_register')}</span><select value="" onChange={e => { set('register_code', e.target.value); setPick(false) }}><option value="">—</option>{refd.register.map(r => <option key={r.code} value={r.code}>{regLabel(r)}</option>)}</select></label>}
         {canEdit && pick === 'gl' && !gl && (!a.department_id ? <p className="m">ℹ️ {t('gl_pick_dept')}</p> : !GB.lines.length ? <p className="m">ℹ️ {t('gl_none_yet')}</p>
@@ -409,7 +413,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       </div>
       <div className="card"><div className="rh"><p className="k">{t('step_goal')}</p>{canEdit && <button className="btn ghost" onClick={() => go(0)}>{t('edit')}</button>}</div>
         <R label={t('s_title')} v={a.title} />{dep && <R label={t('department')} v={dep[lang === 'ar' ? 'name_ar' : 'name_en']} />}
-        <R label={t('s_other')} v={[a.lane_other, linked && t('linked_to') + ': ' + regLabel(linked)].filter(Boolean).join(' · ')} /><R label={t('s_what')} v={a.what_text} /><R label={t('gl_section')} v={gl ? glLabel(gl) : t('gl_new_money')} /></div>
+        <R label={t('s_other')} v={[a.lane_other, linked && t('linked_to') + ': ' + regLabel(linked)].filter(Boolean).join(' · ')} /><R label={t('s_what')} v={a.what_text} /><R label={t('gl_section')} v={gl ? glLabel(gl) : a.link_none && !linked ? t('none_review') : t('gl_new_money')} /></div>
       <div className="card"><div className="rh"><p className="k">{t('step_money')}</p>{canEdit && <button className="btn ghost" onClick={() => go(1)}>{t('edit')}</button>}</div>
         <R label={t('capex_amount')} v={a.quote_decides ? t('quote_decides') : cx ? `${fmt(cx)} ${t('egp')} (${approx(lang, cx)})` : ''} /><R label={t('quarter')} v={a.quarter} />
         <R label={t('opex_lbl')} v={oy ? `${fmt(oy)} ${t('egp')}` : ''} /><R label={t('year_one')} v={`${fmt(cx + oy)} ${t('egp')}`} />{files.length > 0 && <R label={t('quote')} v={files.map(f => f.name).join(', ')} />}</div>
@@ -512,7 +516,7 @@ function Room({ t, lang, profile, refd, show }) {
 // Departments write their own GL lines (until finance locks them) and record spending as it happens.
 // AX uploads are the check: we count whichever is higher, what the department recorded or what AX shows.
 // left = budget − spent − promised (requests waiting or approved, minus what was already recorded against them)
-const YEARS = [2026, 2027]
+const YEARS = [2025, 2026, 2027]
 const sheetRows = async (file) => { const wb = XLSX.read(await file.arrayBuffer()); return XLSX.utils.sheet_to_json(wb.Sheets[wb.SheetNames[0]], { defval: '' }) }
 const toNum = (v) => Number(String(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[^0-9.-]/g, '')) || 0
 const col = (row, ...names) => { const k = Object.keys(row).find(x => names.some(n => x.trim().toLowerCase() === n)); return k ? row[k] : '' }
@@ -530,7 +534,7 @@ function useBudget(year, depIds) {
   const key = depIds ? depIds.join(',') : ''
   const load = useCallback(async () => {
     const q = (tb, sel) => { let x = supabase.from(tb).select(sel); if (year) x = x.eq('fiscal_year', year); if (depIds) x = x.in('department_id', depIds); return x }
-    const [l, a, r] = await Promise.all([q('budget_lines', '*').order('gl_code'), q('spend_actuals', 'id,department_id,budget_line_id,request_id,gl_code,amount,period,description,source,uploaded_by'), q('spend_requests', '*, profiles:requested_by(name,email)').order('created_at', { ascending: false })])
+    const [l, a, r] = await Promise.all([q('budget_lines', '*').order('gl_code'), q('spend_actuals', 'id,department_id,budget_line_id,request_id,gl_code,amount,period,as_of,description,source,uploaded_by'), q('spend_requests', '*, profiles:requested_by(name,email)').order('created_at', { ascending: false })])
     setD({ lines: l.data || [], acts: a.data || [], reqs: r.data || [] })
   }, [year, key]) // eslint-disable-line react-hooks/exhaustive-deps
   useEffect(() => { load() }, [load])
@@ -546,11 +550,93 @@ function useBudget(year, depIds) {
   const line = (id) => calc(x => ('kind' in x ? x.id : x.budget_line_id) === id)
   // a department adds up its lines one by one, so AX being higher on one line is not hidden by another
   const dep = (id) => {
-    const parts = [...d.lines.filter(l => l.department_id === id).map(l => line(l.id)), calc(x => x.department_id === id && !('kind' in x) && !x.budget_line_id)]
+    const parts = [...d.lines.filter(l => l.department_id === id && l.kind !== 'capex').map(l => line(l.id)), calc(x => x.department_id === id && !('kind' in x) && !x.budget_line_id)]
     const tot = parts.reduce((s, n) => ({ budget: s.budget + n.budget, recorded: s.recorded + n.recorded, ax: s.ax + n.ax, spent: s.spent + n.spent, promised: s.promised + n.promised }), { budget: 0, recorded: 0, ax: 0, spent: 0, promised: 0 })
     return { ...tot, left: tot.budget - tot.spent - tot.promised }
   }
   return { ...d, load, line, dep }
+}
+
+
+/* finance's own sheets, imported as they are (see finance.js) */
+const OWNER_ALIAS = { production: 'PRD', 'الإنتاج': 'PRD', prd: 'PRD', maintenance: 'MNT', 'الصيانة': 'MNT', lab: 'LAB', 'المعمل': 'LAB', qhse: 'HSE', hse: 'HSE', 'السلامة العامة والصحة المهنية': 'HSE', qc: 'QC', qms: 'QMS' }
+function FinanceImport({ t, lang, refd, profile, book, show, onClose, onDone }) {
+  const nm = (x) => x?.[lang === 'ar' ? 'name_ar' : 'name_en']
+  const owners = [...new Set(book.sheets.flatMap(s => (s.lines || []).map(l => l.owner)))]
+  const guess = (o) => { const s = String(o || '').trim().toLowerCase(); const d = refd.departments.find(d => [d.code, d.name_en, d.name_ar].some(x => String(x || '').toLowerCase() === s)) || refd.departments.find(d => d.code === OWNER_ALIAS[s]); return d?.id || '' }
+  const [map, setMap] = useState(() => {
+    const m = Object.fromEntries(owners.map(o => [o, guess(o)]))
+    // an owner we can't place ("Plant" on the CAPEX tab) goes with the file's main department until someone says otherwise
+    const cnt = {}; book.sheets.forEach(s => (s.lines || []).forEach(l => { if (m[l.owner]) cnt[m[l.owner]] = (cnt[m[l.owner]] || 0) + 1 }))
+    const top = Number(Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a])[0]) || ''
+    owners.forEach(o => { if (!m[o]) m[o] = top }); return m
+  })
+  const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10))
+  const [busy, setBusy] = useState(false)
+  const notes = notice(book)
+  const kindLabel = { ytd: t('fi_kind_ytd'), plan: t('fi_kind_plan'), capex: t('fi_kind_capex'), detail: t('fi_kind_detail'), skip: t('fi_kind_skip') }
+  const hasActuals = book.sheets.some(s => s.type === 'ytd')
+
+  const run = async () => {
+    setBusy(true)
+    try {
+      const years = [...new Set(book.sheets.map(s => s.year).filter(Boolean))]
+      const { data: ex0, error: e0 } = await supabase.from('budget_lines').select('*').in('fiscal_year', years.flatMap(y => [y - 1, y, y + 1])); if (e0) throw e0
+      const ex = ex0 || []; let made = 0, changed = 0, acts = 0
+      // budget vs actual first (it is finance's official number), then the monthly plan, then CAPEX
+      const order = { ytd: 0, plan: 1, capex: 2 }
+      for (const sh of book.sheets.filter(s => s.type in order).sort((a, b) => order[a.type] - order[b.type])) {
+        if (!sh.year) continue
+        for (const l of sh.lines) {
+          const dep = Number(map[l.owner]); if (!dep) continue
+          let line = ex.find(x => x.fiscal_year === sh.year && x.department_id === dep && (l.gl ? x.gl_code === l.gl : x.kind === 'capex' && x.name === l.name))
+          if (line) {
+            const patch = sh.type === 'plan' ? { monthly: l.monthly } : sh.type === 'capex' ? { amount: l.budget, note: l.note } : { amount: l.budget, name: l.name }
+            const { error } = await supabase.from('budget_lines').update(patch).eq('id', line.id); if (error) throw error
+            Object.assign(line, patch); changed++
+          } else {
+            const { data, error } = await supabase.from('budget_lines').insert({ fiscal_year: sh.year, department_id: dep, kind: l.kind, gl_code: l.gl, name: l.name, amount: l.budget, monthly: l.monthly, note: l.note || null, created_by: profile.id }).select().single(); if (error) throw error
+            ex.push(data); line = data; made++
+          }
+          if (sh.type === 'ytd' && l.actual != null) {
+            // year-to-date totals: the new snapshot replaces the old one, or it would count twice
+            const { error: de } = await supabase.from('spend_actuals').delete().eq('budget_line_id', line.id).eq('source', 'ax'); if (de) throw de
+            if (l.actual) { const { error } = await supabase.from('spend_actuals').insert({ fiscal_year: sh.year, department_id: dep, budget_line_id: line.id, gl_code: l.gl, amount: l.actual, period: asOf, as_of: asOf, description: 'Finance YTD', source: 'ax', source_file: book.fileName, uploaded_by: profile.id }); if (error) throw error; acts++ }
+          }
+        }
+      }
+      // breakdown tabs: hang each block on the line with the same GL that year
+      for (const sh of book.sheets.filter(s => s.type === 'detail')) for (const b of sh.blocks) {
+        for (const line of ex.filter(x => x.gl_code === b.gl && x.fiscal_year === sh.year)) {
+          const details = [...(line.details || []).filter(g => g.sheet !== sh.name || g.file !== book.fileName), { file: book.fileName, sheet: sh.name, years: sh.yearCols, items: b.items }]
+          const { error } = await supabase.from('budget_lines').update({ details }).eq('id', line.id); if (error) throw error
+          line.details = details; changed++
+        }
+      }
+      // last year's budget for the same GL, so a big jump shows without anyone asking
+      for (const line of ex.filter(x => x.gl_code && x.last_year == null)) {
+        const prev = ex.filter(x => x.fiscal_year === line.fiscal_year - 1 && x.gl_code === line.gl_code && Number(x.amount) > 0).sort((a, b) => (b.department_id === line.department_id) - (a.department_id === line.department_id))[0]
+        if (prev) { await supabase.from('budget_lines').update({ last_year: prev.amount }).eq('id', line.id); line.last_year = prev.amount }
+      }
+      const glc = Object.values(Object.fromEntries(book.sheets.flatMap(s => s.lines || []).filter(l => l.gl).map(l => [l.gl, { code: l.gl, name: l.name }])))
+      if (glc.length) await supabase.from('gl_catalog').upsert(glc)
+      show(`✓ ${t('fi_done')}: +${made} · ${changed} ↻ · ${acts} AX`); onDone(years.includes(new Date().getFullYear()) ? new Date().getFullYear() : Math.max(...years))
+    } catch (e) { show(e.message || String(e)) }
+    setBusy(false)
+  }
+
+  return <div className="card n" style={{ marginTop: 12 }}>
+    <div className="rh"><p className="k" style={{ margin: 0 }}>{t('fi_title')} · {book.fileName}</p><button className="btn ghost sm" onClick={onClose}>✕</button></div>
+    <p className="m">{t('fi_hint')}</p>
+    <table className="tb"><tbody>{book.sheets.map(s => <tr key={s.name}><td>{t('fi_sheet')}: <b>{s.name}</b></td><td>{kindLabel[s.type]}</td><td>{s.year || '—'}</td><td className="m">{s.lines ? s.lines.length + ' ' + t('fi_lines_word') : s.blocks ? s.blocks.length + ' GL · ' + s.blocks.reduce((n, b) => n + b.items.length, 0) + ' ' + t('fi_items') : ''}</td></tr>)}</tbody></table>
+    {owners.length > 0 && <><p className="k" style={{ marginTop: 12 }}>{t('fi_owner')}</p>
+      {owners.map(o => <div key={o} className="row" style={{ alignItems: 'center' }}><div style={{ flex: 1 }}><b>{o}</b></div><div style={{ flex: 2 }}><select value={map[o]} onChange={e => setMap({ ...map, [o]: e.target.value })}><option value="">{t('fi_skip_owner')}</option>{refd.departments.map(d => <option key={d.id} value={d.id}>{d.code} · {nm(d)}</option>)}</select></div></div>)}</>}
+    {hasActuals && <><label className="f" style={{ maxWidth: 260 }}><span>{t('fi_asof')}</span><input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} /></label><p className="m">ℹ️ {t('fi_replace')}</p></>}
+    {notes.length > 0 && <><p className="k" style={{ marginTop: 12 }}>💡 {t('fi_noticed')}</p>
+      {notes.slice(0, 14).map((n, i) => <div key={i} className="m">• {n.l.gl} · {n.l.name}: {n.k === 'over' ? <>{fmt(n.l.actual)} / {fmt(n.l.budget)} <b className="gate">{n.pct}% {t('fi_over')}</b></> : n.k === 'nobudget' ? <><b className="gate">{fmt(n.l.actual)}</b> {t('fi_nobudget')}</> : <>{t('fi_total_diff')}: {fmt(n.l.budget)} ≠ {fmt(n.other)}</>} <span className="m">({n.s})</span></div>)}
+      {notes.length > 14 && <div className="m">… +{notes.length - 14}</div>}</>}
+    <div className="btns"><button className="btn p" disabled={busy} onClick={run}>{busy ? '…' : '⬆ ' + t('fi_import')}</button><button className="btn" onClick={onClose}>{t('cancel')}</button></div>
+  </div>
 }
 
 function Budget({ t, lang, profile, refd, show }) {
@@ -565,12 +651,15 @@ function Budget({ t, lang, profile, refd, show }) {
   const [nl, setNl] = useState({ dep: own, gl_code: '', name: '', amount: '', last_year: '' })
   const [sp, setSp] = useState({ dep: own, line: '', req: '', amount: '', date: new Date().toISOString().slice(0, 10), note: '' })
   const [open, setOpen] = useState({}); const [busy, setBusy] = useState(false); const [panel, setPanel] = useState(null)
+  const [book, setBook] = useState(null); const [why, setWhy] = useState({})
+  const upFinance = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { setBook(readWorkbook(await f.arrayBuffer(), f.name)) } catch (err) { show(err.message) } }
   const isAdmin = profile.role === 'admin', canDecide = isAdmin || profile.role === 'director', canWrite = profile.role !== 'excom'
   const deps = profile.role === 'excom' ? refd.departments : myDeps(profile, refd)
-  const depLines = (id) => lines.filter(l => l.department_id === id)
+  const depLines = (id) => lines.filter(l => l.department_id === id && l.kind !== 'capex')
+  const depCapex = (id) => lines.filter(l => l.department_id === id && l.kind === 'capex')
   const Bar = ({ n }) => { const b = n.budget || 1; return <div className="bbar"><i className="sp" style={{ width: Math.min(100, 100 * n.spent / b) + '%' }} /><i className="cm" style={{ width: Math.min(100, 100 * n.promised / b) + '%' }} /></div> }
-  const Flag = ({ n }) => { if (!n.budget) return null; const p = (n.spent + n.promised) / n.budget; return p >= 0.8 ? <span className={'pill ' + (p >= 1 ? 'gate' : 'yellow')}>{p >= 1 ? t('b_over') : t('b_80')} · {Math.round(100 * p)}%</span> : null }
-  const AxNote = ({ n }) => n.ax > 0 && Math.abs(n.ax - n.recorded) > 0.5 ? <div className="m axn">{t('b_ax_check')}: {fmt(n.ax)} · {t('b_recorded')}: {fmt(n.recorded)} {n.ax > n.recorded ? '⚠️ ' + t('b_ax_more') : ''}</div> : null
+  const Flag = ({ n }) => { if (!n.budget) return n.spent > 0 ? <span className="pill gate">{t('b_unbudgeted')}</span> : null; const p = (n.spent + n.promised) / n.budget; return p >= 0.8 ? <span className={'pill ' + (p >= 1 ? 'gate' : 'yellow')}>{p >= 1 ? t('b_over') : t('b_80')} · {Math.round(100 * p)}%</span> : null }
+  const AxNote = ({ n }) => n.ax > 0 && n.recorded > 0 && Math.abs(n.ax - n.recorded) > 0.5 ? <div className="m axn">{t('b_ax_check')}: {fmt(n.ax)} · {t('b_recorded')}: {fmt(n.recorded)} {n.ax > n.recorded ? '⚠️ ' + t('b_ax_more') : ''}</div> : null
   const lineLabel = (l) => (l.gl_code ? l.gl_code + ' · ' : '') + l.name
 
   // the instant answer to "do we have budget for this?"
@@ -708,13 +797,20 @@ function Budget({ t, lang, profile, refd, show }) {
         <div className="rh"><h2 style={{ margin: 0 }}>{nm(d)}</h2><Flag n={n} /></div>
         <div className="tot four"><div><span>{t('b_budget')}</span><b>{fmt(n.budget)}</b></div><div><span>{t('b_spent')}</span><b>{fmt(n.spent)}</b></div><div className="o"><span>{t('b_committed')}</span><b>{fmt(n.promised)}</b></div><div className={n.left < 0 ? 'neg' : 'pos'}><span>{t('b_left')}</span><b>{fmt(n.left)}</b></div></div>
         {n.budget > 0 && <Bar n={n} />}<AxNote n={n} />
+        {depCapex(d.id).length > 0 && <p className="m">🏗️ {t('b_capex_list')}: <b>{fmt(depCapex(d.id).reduce((s, l) => s + Number(l.amount), 0))}</b> · {depCapex(d.id).length} {t('fi_items')}</p>}
         {ls.length === 0 && <p className="m">{t('b_no_lines')} {canWrite && <a href="#" onClick={e => { e.preventDefault(); setNl({ ...nl, dep: d.id }); setPanel('lines'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{t('b_add_line')} →</a>}</p>}
         {(ls.length > 0 || rq.length > 0 || man.length > 0) && <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => setOpen({ ...open, [d.id]: !open[d.id] })}>{open[d.id] ? '▾' : '▸'} {t('b_details')}</button>}
         {open[d.id] && <>
           {ls.length > 0 && <div style={{ overflowX: 'auto' }}><table className="tb" style={{ marginTop: 8 }}><thead><tr><th>{t('b_line')}</th><th>{t('b_last_year')}</th><th>{t('b_budget')}</th><th>{t('b_spent')}</th><th>{t('b_committed')}</th><th>{t('b_left')}</th><th></th></tr></thead><tbody>
-            {ls.map(l => { const x = B.line(l.id); return <tr key={l.id}><td>{l.gl_code ? <span className="m">{l.gl_code} · </span> : ''}{l.name}{l.locked && <span title={t('b_locked')}> 🔒</span>}<AxNote n={x} /></td><td className="m">{l.last_year ? fmt(l.last_year) : ''}</td><td>{fmt(x.budget)}</td><td>{fmt(x.spent)}</td><td>{fmt(x.promised)}</td><td><b className={x.left < 0 ? 'gate' : ''}>{fmt(x.left)}</b></td>
-              <td style={{ whiteSpace: 'nowrap' }}><Flag n={x} />{!l.locked && canWrite && <button className="btn ghost sm" onClick={() => delLine(l)}>✕</button>}{isAdmin && <button className="btn ghost sm" title={l.locked ? t('b_unlock') : t('b_lock')} onClick={() => lockLine(l, !l.locked)}>{l.locked ? '🔓' : '🔒'}</button>}</td></tr> })}
+            {ls.map(l => { const x = B.line(l.id); const pn = planToDate(l.monthly, year); const items = (l.details || []).flatMap(g => g.items.map(it => ({ ...it, years: g.years })))
+              return <Fragment key={l.id}><tr><td>{l.gl_code ? <span className="m">{l.gl_code} · </span> : ''}{l.name}{l.locked && <span title={t('b_locked')}> 🔒</span>}<AxNote n={x} />
+                {l.note && <div className="m">{l.note}</div>}
+                {pn != null && <div className="m">{t('b_plan_now')}: {fmt(pn)}{x.spent > pn * 1.05 && <b className="gate"> · ⚠️ {t('b_ahead')}</b>}</div>}
+                {items.length > 0 && <button className="btn ghost sm" onClick={() => setWhy({ ...why, [l.id]: !why[l.id] })}>📋 {t('b_breakdown')} ({items.length})</button>}</td><td className="m">{l.last_year ? fmt(l.last_year) : ''}</td><td>{fmt(x.budget)}</td><td>{fmt(x.spent)}</td><td>{fmt(x.promised)}</td><td><b className={x.left < 0 ? 'gate' : ''}>{fmt(x.left)}</b></td>
+              <td style={{ whiteSpace: 'nowrap' }}><Flag n={x} />{!l.locked && canWrite && <button className="btn ghost sm" onClick={() => delLine(l)}>✕</button>}{isAdmin && <button className="btn ghost sm" title={l.locked ? t('b_unlock') : t('b_lock')} onClick={() => lockLine(l, !l.locked)}>{l.locked ? '🔓' : '🔒'}</button>}</td></tr>
+              {why[l.id] && (() => { const ys = [...new Set(items.flatMap(it => Object.keys(it.by)))].sort(); return <tr><td colSpan={7}><table className="tb sub"><tbody>{items.map((it, i) => <tr key={i}><td>{it.vendor}</td><td>{it.item}</td><td className="m">{it.price ? fmt(it.price) + (it.count ? ' × ' + it.count : '') : ''}</td>{ys.map(y => <td key={y}>{it.by[y] ? <><span className="m">{y} </span>{fmt(it.by[y])}</> : ''}</td>)}</tr>)}</tbody></table></td></tr> })()}</Fragment> })}
           </tbody></table></div>}
+          {depCapex(d.id).length > 0 && <><p className="k" style={{ marginTop: 12 }}>🏗️ {t('b_capex_list')}</p><div style={{ overflowX: 'auto' }}><table className="tb"><tbody>{depCapex(d.id).map(l => <tr key={l.id}><td>{l.name}{l.note && <div className="m">{l.note}</div>}</td><td>{fmt(l.amount)}</td><td style={{ whiteSpace: 'nowrap' }}>{!l.locked && canWrite && <button className="btn ghost sm" onClick={() => delLine(l)}>✕</button>}</td></tr>)}</tbody></table></div></>}
           {rq.length > 0 && <><p className="k" style={{ marginTop: 12 }}>{t('b_requests')}</p>{rq.map(r => <div key={r.id} className="req"><div style={{ flex: 1 }}>{r.title}<div className="m">{r.profiles?.name || r.profiles?.email} · {new Date(r.created_at).toLocaleDateString()}{r.note ? ' — ' + r.note : ''}</div></div>
             <div className="amt"><b>{fmt(r.amount)}</b></div><span className={'pill ' + ({ open: 'with_director', approved: 'green', rejected: 'gate', booked: 'submitted' }[r.status])}>{t('b_st_' + r.status)}</span>
             {r.status === 'open' && r.requested_by === profile.id && <button className="btn ghost" onClick={() => withdraw(r)}>{t('withdraw')}</button>}</div>)}</>}
@@ -724,11 +820,13 @@ function Budget({ t, lang, profile, refd, show }) {
 
     {isAdmin && <div className="card n" style={{ marginTop: 12 }}><p className="k">{t('b_admin')} · {year}</p><p className="m">{t('b_admin_hint')}</p>
       <div className="btns">
+        <label className="btn p">⬆ {t('b_up_finance')}<input type="file" accept=".xlsx,.xls" hidden onChange={upFinance} /></label>
         <label className="btn">⬆ {t('b_up_lines')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upLines} /></label>
         <label className="btn">⬆ {t('b_up_acts')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upActs} /></label>
         <button className="btn ghost" onClick={() => template('lines')}>⬇ {t('b_tpl_lines')}</button>
         <button className="btn ghost" onClick={() => template('actuals')}>⬇ {t('b_tpl_acts')}</button>
-      </div></div>}
+      </div>
+      {book && <FinanceImport t={t} lang={lang} refd={refd} profile={profile} book={book} show={show} onClose={() => setBook(null)} onDone={(y) => { setBook(null); if (y !== year) setYear(y); else B.load() }} />}</div>}
   </>
 }
 
@@ -739,7 +837,7 @@ function Outputs({ t, lang, refd }) {
   const sums = rows.reduce((s, a) => { const g = a.status === 'green'; return { capex: s.capex + capex(a), opex: s.opex + opexYear(a), gc: s.gc + (g ? capex(a) : 0), go: s.go + (g ? opexYear(a) : 0) } }, { capex: 0, opex: 0, gc: 0, go: 0 })
   const xlsx = () => {
     const data = rows.map(a => { const tt = a.ask_totals || {}; const oy = opexYear(a); return {
-      Directorate: a.departments?.directorates?.name_en, Department: a.departments?.name_en, Title: a.title, Lane: a.lane, Register: a.register_code, 'Goal (own words)': a.lane_other, Quarter: a.quarter, 'Capex class': a.capex_class, 'CAPEX (EGP)': a.quote_decides ? null : capex(a), 'Quote decides': a.quote_decides ? 'yes' : '',
+      Directorate: a.departments?.directorates?.name_en, Department: a.departments?.name_en, Title: a.title, Lane: a.lane, Register: a.register_code, 'Goal (own words)': a.lane_other, Link: a.register_code ? 'ExCom' + (a.budget_line_id ? ' + GL' : '') : a.budget_line_id ? 'GL' : a.link_none ? 'Neither (new need)' : '', Quarter: a.quarter, 'Capex class': a.capex_class, 'CAPEX (EGP)': a.quote_decides ? null : capex(a), 'Quote decides': a.quote_decides ? 'yes' : '',
       'OPEX people': a.opex_people, 'OPEX training': a.opex_training, 'OPEX consumables': a.opex_consumables, 'OPEX maintenance': a.opex_maintenance, 'OPEX licences': a.opex_licences, 'OPEX other': a.opex_other, 'OPEX / year': oy, 'Year-one total': capex(a) + oy,
       'What': a.what_text, 'Return': a.return_text, 'Return when': a.return_when, 'Measure': a.measure_text, 'Measure when': a.measure_when, 'If not funded': a.if_not_funded, 'What we stop': a.what_we_stop,
       'Score fit': tt.fit, 'Score evidence': tt.evidence, 'Score reversible': tt.reversible, 'Score payback': tt.payback, 'Score total': tt.total, 'Scorers': tt.scorers, Status: a.status, 'Submitted': a.submitted_at,

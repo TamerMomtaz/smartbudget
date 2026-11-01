@@ -52,3 +52,10 @@ create table if not exists gl_catalog (code text primary key, name text not null
 alter table gl_catalog enable row level security;
 create policy "glc read" on gl_catalog for select to authenticated using (true);
 create policy "glc admin" on gl_catalog for all to authenticated using (current_role_() = 'admin') with check (current_role_() = 'admin');
+
+-- 2026-11-01: "neither" link on cards; finance YTD sheets (monthly plan, breakdown, snapshot date)
+alter table public.asks add column if not exists link_none boolean not null default false;
+alter table public.budget_lines add column if not exists monthly jsonb;
+alter table public.budget_lines add column if not exists details jsonb;
+alter table public.budget_lines add column if not exists note text;
+alter table public.spend_actuals add column if not exists as_of date;

@@ -117,3 +117,4 @@ body.proj .card p,body.proj .hero p{font-size:22px}
 .axn{font-size:13px;margin-top:6px}
 .hero .btns .btn{background:#fff;color:var(--navy)}.hero .btns .btn.p{background:var(--or);color:#fff;border-color:var(--or)}
 .row.linked{align-items:center;gap:8px;margin:6px 0}.row.linked>*{flex:none;min-width:0}
+.tb.sub{margin:4px 0;font-size:.9em;background:var(--bg,#f6f7f9)}.tb.sub td{padding:4px 8px}
