@@ -236,11 +236,11 @@ function Board({ t, lang, profile, refd, list }) {
     return { d, head: heads.find(h => h.department_id === d.id), n: as.length, draft: as.filter(a => ['draft', 'returned'].includes(a.status)).length, you: as.filter(a => a.status === 'with_director').length, room: as.filter(a => !['draft', 'returned', 'with_director'].includes(a.status)).length, capex: as.reduce((s, a) => s + capex(a), 0) }
   })
   const max = Math.max(1, ...rows.map(r => r.capex))
-  return <div className="card" style={{ overflowX: 'auto', marginTop: 12 }}><p className="k">{t('board_title')}</p>
-    <table className="tb board"><thead><tr><th>{t('department')}</th><th>{t('board_head')}</th><th>{t('draft')}</th><th>{t('board_with_you')}</th><th>{t('board_room')}</th><th>{t('capex_lbl')}</th></tr></thead><tbody>
+  return <div className="card" style={{ overflowX: 'auto', marginTop: 12 }}><p className="k">{t('board_title')}</p><p className="m" style={{ marginTop: -4 }}>{t('board_hint')}</p>
+    <table className="tb board"><thead><tr><th>{t('department')}</th><th>{t('board_head')}</th><th>{t('board_draft')}</th><th>{t('board_with_you')}</th><th>{t('board_room')}</th><th>{t('board_capex')}</th></tr></thead><tbody>
       {rows.map(r => <tr key={r.d.id} className={r.n ? '' : 'idle'}><td><b>{r.d[lang === 'ar' ? 'name_ar' : 'name_en']}</b></td>
         <td>{r.head ? (r.head.name || r.head.email.split('@')[0]) : '—'}{r.head && !r.head.last_seen_at && <span className="m"> · {t('invite')}?</span>}</td>
-        {r.n ? <><td>{r.draft || ''}</td><td>{r.you ? <span className="pill with_director">{r.you}</span> : ''}</td><td>{r.room || ''}</td></> : <td colSpan={3}><span className="pill gate">{t('board_not_started')}</span></td>}
+        {r.n ? <><td>{r.draft ? <span className="pill draft">{r.draft}</span> : '·'}</td><td>{r.you ? <span className="pill with_director">{r.you}</span> : '·'}</td><td>{r.room ? <span className="pill submitted">{r.room}</span> : '·'}</td></> : <td colSpan={3}><span className="pill draft">{t('board_not_started')}</span></td>}
         <td style={{ minWidth: 140 }}>{r.capex ? <><div>{fmt(r.capex)}</div><div className="bar"><i style={{ width: (100 * r.capex / max) + '%' }} /></div></> : ''}</td></tr>)}
     </tbody></table></div>
 }
@@ -529,10 +529,12 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
 
 /* ---------------- THE ROOM ---------------- */
 function Room({ t, lang, profile, refd, show }) {
+  const [coming, setComing] = useState([])
   const [list, setList] = useState([]); const [i, setI] = useState(0); const [mine, setMine] = useState({}); const [totals, setTotals] = useState({})
   const load = useCallback(async () => {
     const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar), attachments(*)').eq('cycle_id', refd.cycle.id).in('status', ['submitted', 'pitched', 'green', 'yellow', 'gate']).order('department_id').order('created_at')
     setList(data || [])
+    const { data: cm } = await supabase.from('asks').select('status').eq('cycle_id', refd.cycle.id).in('status', ['draft', 'returned', 'with_director']); setComing(cm || [])
     const { data: tt } = await supabase.from('ask_totals').select('*'); setTotals(Object.fromEntries((tt || []).map(x => [x.ask_id, x])))
     const { data: ms } = await supabase.from('scores').select('*').eq('scorer_id', profile.id); setMine(Object.fromEntries((ms || []).map(x => [x.ask_id, x])))
   }, [refd.cycle.id, profile.id])
@@ -552,7 +554,9 @@ function Room({ t, lang, profile, refd, show }) {
   }, [list.length, lang])
   const toggleProj = () => { if (!proj) { setProj(true); document.documentElement.requestFullscreen?.().catch(() => {}) } else { setProj(false); if (document.fullscreenElement) document.exitFullscreen() } }
   const a = list[i]
-  if (!a) return <div className="card"><h2>{t('room_title')}</h2><p className="m">{t('no_room')}</p></div>
+  if (!a) return <div className="hero"><p className="k">{refd.cycle.name}</p><h2>🎤 {t('room_title')}</h2><p>{t('room_empty')}</p>
+    {coming.length > 0 && <p className="m">{t('room_waiting')}: {['draft', 'with_director'].map(k => { const n = coming.filter(c => k === 'draft' ? c.status !== 'with_director' : c.status === k).length; return n ? <span key={k} className={'pill ' + k} style={{ marginInlineStart: 6 }}>{t(k === 'draft' ? 'board_draft' : 'with_director')} · {n}</span> : null })}</p>}
+    <p className="m">{t('room_how')}</p><div className="btns"><a className="btn glass" href="#guide">📖 {t('guide')}</a></div></div>
   const my = mine[a.id] || {}; const tot = totals[a.id] || {}
   const setQ = async (k, v) => {
     const row = { ask_id: a.id, scorer_id: profile.id, q_fit: my.q_fit ?? null, q_evidence: my.q_evidence ?? null, q_reversible: my.q_reversible ?? null, q_payback: my.q_payback ?? null, [k]: v }

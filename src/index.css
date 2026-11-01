@@ -254,3 +254,4 @@ details.more{margin-top:14px;border-top:1px solid var(--line);padding-top:10px}
 details.more summary{cursor:pointer;font-weight:600;color:var(--navy)}
 details.more .morerow{margin-top:10px;padding:10px 12px;border-radius:10px;background:rgba(255,255,255,.6)}
 details.more .morerow .btns{margin-top:6px}
+a.btn{text-decoration:none}
