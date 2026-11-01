@@ -55,6 +55,7 @@ A: Your department, your director and the admin. The room sees a card only after
 # Every field and button (en)
 - Explain mode is on: Tap, click or move into any field or button with a dotted outline, and its explanation shows here. Everything still works as usual while this is on. How: Turn it off with the same "? Explain" button at the top.
 - Guide: One page that walks the whole journey: writing a card, the director, the room, how funded cards join the budget, GL lines, finance’s Excel and signing in. How: Open it any time. It works before signing in too, so you can send the link to someone new: smartbudget.devoneerstechnology.ai/#guide
+- Two looks: 🎮 switches to a dark metallic look, like a game. 💼 brings back the clean business look. Everything else stays the same. How: Tap once. Your choice is remembered on this browser.
 - Language: Switches the whole platform between Arabic and English. Your cards stay exactly the same; only the labels change. How: Tap once. Your choice is remembered on this browser.
 - Cards (Asks): Each card is one request for Budget 2027: a machine, a project, a fix. Heads write cards, directors review and send them to the room. How: Tap "+ New card", or open an existing one to continue.
 - The room: Where the committee sees each card on the projector and scores it from 0 to 3 on each question. How: Use the arrow keys to move between cards; projector mode makes everything big.
@@ -151,6 +152,7 @@ A: قسمك، ومديرك، والأدمن. والغرفة بتشوف الكا�
 # Every field and button (ar)
 - وضع "فهمني" شغّال: المس أو اضغط أو ادخل على أي خانة أو زرار عليه خط منقّط، وشرحه هيظهر هنا. كل حاجة بتشتغل عادي وإنت في الوضع ده. How: اقفله من نفس زرار "؟ فهمني" اللي فوق.
 - الدليل: صفحة واحدة بتمشي معاك الرحلة كلها: كتابة الكارت، المدير، الغرفة، إزاي الكارت المعتمد بيدخل الميزانية، بنود الـGL، شيت المالية والدخول. How: افتحها في أي وقت. بتشتغل من غير دخول كمان، فتقدر تبعت اللينك لأي حد جديد: smartbudget.devoneerstechnology.ai/#guide
+- شكلين: 🎮 بيقلب المنصة لشكل غامق معدني زي الجيمز. 💼 بيرجّع شكل البيزنس النضيف. كل حاجة تانية زي ما هي. How: دوسة واحدة، واختيارك بيتحفظ على المتصفح ده.
 - اللغة: بيقلب المنصة كلها عربي أو إنجليزي. الكروت زي ما هي، اللي بيتغير الكلام بس. How: دوسة واحدة، واختيارك بيتحفظ على المتصفح ده.
 - الكروت: كل كارت طلب واحد لميزانية 2027: ماكينة، مشروع، إصلاح. رئيس القسم يكتب، والمدير يراجع ويبعت للجنة. How: دوس "+ كارت جديد"، أو افتح كارت موجود وكمّل.
 - اللجنة: المكان اللي اللجنة بتشوف فيه كل كارت على البروجكتور وتديله درجة من 0 لـ3 في كل سؤال. How: استخدم الأسهم للتنقل، ووضع البروجكتور بيكبّر كل حاجة.

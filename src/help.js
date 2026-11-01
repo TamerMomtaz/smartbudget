@@ -4,6 +4,7 @@ export const HELP = {
   en: {
     intro: { t: 'Explain mode is on', b: 'Tap, click or move into any field or button with a dotted outline, and its explanation shows here. Everything still works as usual while this is on.', how: 'Turn it off with the same "? Explain" button at the top.' },
     guide: { t: 'Guide', b: 'One page that walks the whole journey: writing a card, the director, the room, how funded cards join the budget, GL lines, finance’s Excel and signing in.', how: 'Open it any time. It works before signing in too, so you can send the link to someone new: smartbudget.devoneerstechnology.ai/#guide' },
+    theme: { t: 'Two looks', b: '🎮 switches to a dark metallic look, like a game. 💼 brings back the clean business look. Everything else stays the same.', how: 'Tap once. Your choice is remembered on this browser.' },
     lang: { t: 'Language', b: 'Switches the whole platform between Arabic and English. Your cards stay exactly the same; only the labels change.', how: 'Tap once. Your choice is remembered on this browser.' },
     tab_asks: { t: 'Cards (Asks)', b: 'Each card is one request for Budget 2027: a machine, a project, a fix. Heads write cards, directors review and send them to the room.', how: 'Tap "+ New card", or open an existing one to continue.' },
     tab_room: { t: 'The room', b: 'Where the committee sees each card on the projector and scores it from 0 to 3 on each question.', how: 'Use the arrow keys to move between cards; projector mode makes everything big.' },
@@ -47,6 +48,7 @@ export const HELP = {
   ar: {
     intro: { t: 'وضع "فهمني" شغّال', b: 'المس أو اضغط أو ادخل على أي خانة أو زرار عليه خط منقّط، وشرحه هيظهر هنا. كل حاجة بتشتغل عادي وإنت في الوضع ده.', how: 'اقفله من نفس زرار "؟ فهمني" اللي فوق.' },
     guide: { t: 'الدليل', b: 'صفحة واحدة بتمشي معاك الرحلة كلها: كتابة الكارت، المدير، الغرفة، إزاي الكارت المعتمد بيدخل الميزانية، بنود الـGL، شيت المالية والدخول.', how: 'افتحها في أي وقت. بتشتغل من غير دخول كمان، فتقدر تبعت اللينك لأي حد جديد: smartbudget.devoneerstechnology.ai/#guide' },
+    theme: { t: 'شكلين', b: '🎮 بيقلب المنصة لشكل غامق معدني زي الجيمز. 💼 بيرجّع شكل البيزنس النضيف. كل حاجة تانية زي ما هي.', how: 'دوسة واحدة، واختيارك بيتحفظ على المتصفح ده.' },
     lang: { t: 'اللغة', b: 'بيقلب المنصة كلها عربي أو إنجليزي. الكروت زي ما هي، اللي بيتغير الكلام بس.', how: 'دوسة واحدة، واختيارك بيتحفظ على المتصفح ده.' },
     tab_asks: { t: 'الكروت', b: 'كل كارت طلب واحد لميزانية 2027: ماكينة، مشروع، إصلاح. رئيس القسم يكتب، والمدير يراجع ويبعت للجنة.', how: 'دوس "+ كارت جديد"، أو افتح كارت موجود وكمّل.' },
     tab_room: { t: 'اللجنة', b: 'المكان اللي اللجنة بتشوف فيه كل كارت على البروجكتور وتديله درجة من 0 لـ3 في كل سؤال.', how: 'استخدم الأسهم للتنقل، ووضع البروجكتور بيكبّر كل حاجة.' },

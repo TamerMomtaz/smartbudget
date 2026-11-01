@@ -355,3 +355,82 @@ a.btn{text-decoration:none}
 .bgt-sug .seg{border:0;background:none}
 [dir=rtl] .dv-truck{left:66vw}[dir=rtl] .dv-runner{left:38vw}[dir=rtl] .dv-msg{left:60%}
 [dir=rtl] .dv-msg{direction:rtl}
+
+/* ===== ARENA: the dark, metallic, gamified look (🎮 in the top bar). The business look above stays the default. ===== */
+html[data-theme=arena]{color-scheme:dark;--bg:#0A0F14;--card:#141C24;--line:#2B3946;--ink:#E3EAF0;--mut:#93A3B1;--ot:#2A1B11;--nt:#1A2531;--gt:#10271B;--yt:#2A220E;--grn:#3DDC84;--yel:#FFC94D;--red:#FF7A45;--blue:#5BB8FF;--ag-edge:#06090C;--neon:#5BB8FF;--gold:#E2A93B}
+html[data-theme=arena] body{background:radial-gradient(1000px 520px at 50% -180px,rgba(91,184,255,.16),transparent 62%),radial-gradient(700px 400px at 100% 100%,rgba(226,169,59,.08),transparent 60%),repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 44px),repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0 1px,transparent 1px 44px),#0A0F14;background-attachment:fixed;color:var(--ink)}
+html[data-theme=arena] a{color:var(--neon)}
+/* chrome */
+html[data-theme=arena] .top{background:linear-gradient(180deg,#222D38,#121A21 60%,#0A0F14);border-bottom:1px solid var(--gold);box-shadow:0 1px 0 rgba(226,169,59,.25),0 6px 24px rgba(0,0,0,.6)}
+html[data-theme=arena] .tabs{background:linear-gradient(180deg,#121A21,#0D1318);box-shadow:inset 0 -1px 0 #243240}
+html[data-theme=arena] .tabs button{color:#8D9DAB;transition:color .2s,text-shadow .2s}
+html[data-theme=arena] .tabs button:hover{color:#DDE7EE;text-shadow:0 0 10px rgba(91,184,255,.6)}
+html[data-theme=arena] .tabs button.on{color:#FFE6A6;border-image:linear-gradient(90deg,transparent,var(--neon),var(--gold),var(--neon),transparent) 1;text-shadow:0 0 14px rgba(255,214,140,.7)}
+/* metallic headings */
+html[data-theme=arena] h1,html[data-theme=arena] h2,html[data-theme=arena] .big,html[data-theme=arena] .tot div b{background:linear-gradient(180deg,#FFFFFF 0%,#C9D3DC 45%,#8E9BA7 55%,#EEF2F5 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+html[data-theme=arena] .big.green{background:none;color:var(--grn);text-shadow:0 0 18px rgba(61,220,132,.55)}html[data-theme=arena] .big.yellow{background:none;color:var(--yel);text-shadow:0 0 18px rgba(255,201,77,.5)}html[data-theme=arena] .big.gate{background:none;color:var(--red);text-shadow:0 0 18px rgba(255,122,69,.5)}
+html[data-theme=arena] .ask .t,html[data-theme=arena] .ask .amt b,html[data-theme=arena] .req .amt b,html[data-theme=arena] .oxt,html[data-theme=arena] .idea-k,html[data-theme=arena] details.more summary,html[data-theme=arena] .helpp h3{color:#EEF3F7}
+html[data-theme=arena] .k{color:var(--gold)}
+/* cards: dark gunmetal plates with a gold hairline and a glow on hover */
+html[data-theme=arena] .card{background:linear-gradient(180deg,#19232D,#121920);border:1px solid #2A3845;border-top-color:rgba(226,169,59,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 18px 40px -22px #000;transition:box-shadow .25s,border-color .25s,transform .25s}
+html[data-theme=arena] .card:hover{border-color:rgba(91,184,255,.45);box-shadow:inset 0 1px 0 rgba(255,255,255,.06),0 0 0 1px rgba(91,184,255,.18),0 0 26px -8px rgba(91,184,255,.45),0 18px 40px -22px #000}
+html[data-theme=arena] .card.o{background:linear-gradient(180deg,#2B1D13,#1E150E)}html[data-theme=arena] .card.n{background:linear-gradient(180deg,#1B2732,#141D26)}html[data-theme=arena] .card.g{background:linear-gradient(180deg,#132C20,#0E2017)}
+html[data-theme=arena] .hero{background:radial-gradient(500px 200px at 85% -40px,rgba(91,184,255,.22),transparent 70%),repeating-linear-gradient(90deg,rgba(255,255,255,.018) 0 2px,transparent 2px 5px),linear-gradient(160deg,#25313D 0%,#121A22 55%,#06090C 100%);border:1px solid #2E3D4B;border-top:2px solid var(--gold);box-shadow:0 0 0 1px rgba(0,0,0,.5),0 0 40px -14px rgba(91,184,255,.45),0 22px 50px -24px #000;position:relative;overflow:hidden}
+html[data-theme=arena] .hero::after{content:"";position:absolute;inset:0;background:linear-gradient(105deg,transparent 40%,rgba(255,255,255,.08) 50%,transparent 60%);transform:translateX(-100%);animation:arenaShine 7s ease-in-out infinite;pointer-events:none}
+html[data-theme=arena] .hero>*{position:relative;z-index:1}
+@keyframes arenaShine{0%,70%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+/* totals as score tiles */
+html[data-theme=arena] .tot>div{background:linear-gradient(180deg,#1F2B37,#151E27);border:1px solid #2C3B49;box-shadow:inset 0 1px 0 rgba(255,255,255,.07)}
+html[data-theme=arena] .tot div.o{background:linear-gradient(180deg,#33210F,#22160B);border-color:#5A3A17}
+html[data-theme=arena] .tot div.neg{background:linear-gradient(180deg,#3A1A10,#26110A)}html[data-theme=arena] .tot div.pos{background:linear-gradient(180deg,#123222,#0C2117)}
+/* buttons: gunmetal, copper and gold, with light */
+html[data-theme=arena] .btn{background:linear-gradient(180deg,#46525E 0%,#2B3540 50%,#1C242C 100%);border-color:#56636F;color:#E8EEF3;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),0 4px 0 #06090C,0 12px 22px -12px #000}
+html[data-theme=arena] .btn:hover:not(:disabled){filter:brightness(1.15)}
+html[data-theme=arena] .btn.p{background:linear-gradient(180deg,#FFA766,#F16C20 50%,#B8480B);border-color:#7A2F06;color:#fff;box-shadow:inset 0 1px 0 rgba(255,255,255,.4),0 4px 0 #5E2404,0 0 22px -4px rgba(241,108,32,.7)}
+html[data-theme=arena] .btn.g{box-shadow:inset 0 1px 0 rgba(255,255,255,.3),0 4px 0 #0B2E1B,0 0 20px -6px rgba(61,220,132,.6)}
+html[data-theme=arena] .btn.y{box-shadow:inset 0 1px 0 rgba(255,255,255,.5),0 4px 0 #5C3F06,0 0 20px -6px rgba(255,201,77,.6)}
+html[data-theme=arena] .btn.ghost{background:rgba(255,255,255,.03);border-color:#3A4856;color:#C9D6DF;box-shadow:none}
+html[data-theme=arena] .btn.glass{border-color:rgba(226,169,59,.55)}
+html[data-theme=arena] .hero .btns .btn:not(.p){background:linear-gradient(180deg,#46525E,#2B3540 50%,#1C242C);color:#E8EEF3}
+/* fields */
+html[data-theme=arena] input[type=text],html[data-theme=arena] input[type=email],html[data-theme=arena] input[type=number],html[data-theme=arena] input[type=date],html[data-theme=arena] input[type=password],html[data-theme=arena] select,html[data-theme=arena] textarea{background:#0C1218;border-color:#2F3E4C;color:var(--ink);box-shadow:inset 0 2px 4px rgba(0,0,0,.5)}
+html[data-theme=arena] input:focus,html[data-theme=arena] select:focus,html[data-theme=arena] textarea:focus{border-color:var(--neon);outline:3px solid rgba(91,184,255,.28)}
+html[data-theme=arena] input.bad,html[data-theme=arena] textarea.bad{background:#2A1510;border-color:var(--red)}
+html[data-theme=arena] .hero select{background:#0C1218;color:var(--ink);border:1px solid #2F3E4C}
+/* pills as badges */
+html[data-theme=arena] .pill{background:#1F2B36;color:#C9D6DF;box-shadow:inset 0 1px 0 rgba(255,255,255,.08)}
+html[data-theme=arena] .pill.draft{background:#262E36;color:#A6B2BD}html[data-theme=arena] .pill.green,html[data-theme=arena] .pill.ordered,html[data-theme=arena] .pill.delivered,html[data-theme=arena] .pill.measured{background:#10301F;color:var(--grn);box-shadow:0 0 12px -3px rgba(61,220,132,.6)}
+html[data-theme=arena] .pill.yellow{background:#33280C;color:var(--yel);box-shadow:0 0 12px -3px rgba(255,201,77,.5)}html[data-theme=arena] .pill.gate{background:#3A1A0E;color:var(--red)}html[data-theme=arena] .pill.pitched{background:#232245;color:#B7B5FF}
+/* tables, bars, steps, toggles */
+html[data-theme=arena] .tb th{background:linear-gradient(180deg,#2A3643,#18212A);color:#FFE6A6;border-bottom:1px solid rgba(226,169,59,.4)}
+html[data-theme=arena] .tb td{border-bottom-color:#22303C}html[data-theme=arena] .tb tr:hover td{background:rgba(91,184,255,.05)}
+html[data-theme=arena] .board tr.idle td{background:rgba(255,122,69,.07)}
+html[data-theme=arena] .tb.sub{background:#0F161C}
+html[data-theme=arena] .bar,html[data-theme=arena] .bbar{background:#0C1218;box-shadow:inset 0 1px 3px rgba(0,0,0,.7)}
+html[data-theme=arena] .bar i{background:linear-gradient(90deg,#F16C20,#FFC94D);box-shadow:0 0 12px rgba(255,170,60,.7)}
+html[data-theme=arena] .bbar .sp{background:linear-gradient(90deg,#2F7CC0,var(--neon));box-shadow:0 0 10px rgba(91,184,255,.6)}
+html[data-theme=arena] .seg{border-color:#2F3E4C}html[data-theme=arena] .seg button{background:#141C24;color:#7F8F9D}html[data-theme=arena] .seg button+button{border-color:#2F3E4C}
+html[data-theme=arena] .seg button.on{background:linear-gradient(180deg,#FFE6A6,#E2A93B 55%,#B07A12);color:#2A1C00;box-shadow:0 0 14px -2px rgba(226,169,59,.7)}
+html[data-theme=arena] .steps button{border-top-color:#2B3946}html[data-theme=arena] .steps button i{background:#1A2531;color:#C9D6DF}
+html[data-theme=arena] .steps button.on{color:#FFE6A6}html[data-theme=arena] .steps button.on i{box-shadow:0 0 14px rgba(241,108,32,.8)}
+html[data-theme=arena] .steps button.done i{background:#10301F;color:var(--grn)}
+html[data-theme=arena] .rv,html[data-theme=arena] .req,html[data-theme=arena] .hist div{border-bottom-color:#26333F}
+html[data-theme=arena] details.more{border-top-color:#26333F}html[data-theme=arena] details.more .morerow,html[data-theme=arena] .oxi{background:rgba(255,255,255,.03);border-color:#2B3946}
+html[data-theme=arena] .toast{background:linear-gradient(180deg,#2A3643,#151D25);border:1px solid var(--gold);box-shadow:0 0 24px -6px rgba(226,169,59,.6)}
+/* explain panel, guide, BudguTee in the dark */
+html[data-theme=arena] .helpp{background:linear-gradient(180deg,#1B242D,#121920);border-color:#3A3420;color:var(--ink)}
+html[data-theme=arena] .helpp .how{background:#0F151B;border-color:#3A3420}
+html[data-theme=arena] .guide .gtoc a{background:#141C24;border-color:#2B3946;color:var(--ink)}
+html[data-theme=arena] .guide .gtip{background:rgba(226,169,59,.1)}
+html[data-theme=arena] .bgt{background:#111920;box-shadow:0 0 0 1.5px rgba(226,169,59,.6),0 0 40px -10px rgba(91,184,255,.4),0 24px 60px -20px #000}
+html[data-theme=arena] .bgt-b{background:linear-gradient(180deg,#0E151B,#111920)}
+html[data-theme=arena] .bgt-m.a{background:#1A2531;border-color:#2B3946;color:var(--ink)}
+html[data-theme=arena] .bgt-chips button,html[data-theme=arena] .bgt-say{background:#1F1A0E;color:#FFE6A6}
+html[data-theme=arena] .bgt-f{border-top-color:#22303C}html[data-theme=arena] .bgt-f input{background:#0C1218;border-color:#2F3E4C;color:var(--ink)}
+html[data-theme=arena] .bgt-note,html[data-theme=arena] .bgt-sug{background:#211B0C;color:#F3DFA8}html[data-theme=arena] .bgt-sug b{color:#FFE6A6}html[data-theme=arena] .bgt-sug .seg button{background:#141C24;color:#C9D6DF}
+html[data-theme=arena] .bgt-peek,html[data-theme=arena] .dv-msg{background:#1A2531;color:#FFE6A6}
+@media (prefers-reduced-motion:reduce){html[data-theme=arena] .hero::after{animation:none;display:none}html[data-theme=arena] .card{transition:none}}
+@media print{html[data-theme=arena]{color-scheme:light}}
+html[data-theme=arena]{background:#0A0F14}html[data-theme=arena] body{min-height:100vh}
+html[data-theme=arena] .top a.brand{color:#fff}
+html[data-theme=arena] h1,html[data-theme=arena] h2,html[data-theme=arena] .tot div b{background-image:linear-gradient(180deg,#FFFFFF 0%,#E6ECF1 48%,#B9C4CE 52%,#FFFFFF 100%)}

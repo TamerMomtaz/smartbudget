@@ -64,7 +64,12 @@ function HelpPanel({ lang, onClose }) {
   </aside>
 }
 
+// two looks: the business one (default) and the dark metallic "arena" one; remembered per browser
+const THEME0 = (() => { try { return localStorage.getItem('sb_theme') || 'biz' } catch { return 'biz' } })()
+if (typeof document !== 'undefined') document.documentElement.dataset.theme = THEME0
 function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
+  const [theme, setTheme] = useState(THEME0)
+  useEffect(() => { document.documentElement.dataset.theme = theme; try { localStorage.setItem('sb_theme', theme) } catch { /* private mode */ } }, [theme])
   const [explain, setExplain] = useState(() => { try { return localStorage.getItem('sb_explain') === '1' } catch { return false } })
   useEffect(() => { document.body.classList.toggle('explain', explain); try { localStorage.setItem('sb_explain', explain ? '1' : '0') } catch { /* private mode */ } }, [explain])
   return <>
@@ -75,6 +80,7 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
       {profile && <div className="who">{profile.name || profile.email}<br />{(profile.departments || profile.directorates)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''}</div>}
       <a className="btn glass" href="#guide" data-help="guide">📖 {t('guide')}</a>
       <button className={'btn glass' + (explain ? ' on' : '')} aria-pressed={explain} onClick={() => setExplain(!explain)}>? {t('explain')}</button>
+      <button className="btn glass" data-help="theme" title={t(theme === 'arena' ? 'theme_biz' : 'theme_arena')} aria-pressed={theme === 'arena'} onClick={() => setTheme(theme === 'arena' ? 'biz' : 'arena')}>{theme === 'arena' ? '💼' : '🎮'}</button>
       <button className="btn glass" data-help="lang" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
       {profile && <button className="btn glass" title={t('pw_set')} onClick={async () => {
         const p1 = prompt(t('pw_set') + ' (8+)'); if (!p1) return; if (p1.length < 8) { alert(t('pw_short')); return }
