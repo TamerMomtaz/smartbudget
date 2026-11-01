@@ -533,7 +533,7 @@ function Room({ t, lang, profile, refd, show }) {
   const decide = async (status) => {
     await supabase.from('asks').update({ status }).eq('id', a.id)
     await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'decision', detail: { status, total: tot.total, scorers: tot.scorers } })
-    show(t(status)); load()
+    show(status === 'green' ? t('green') + ' · ' + t('room_to_budget') : t(status)); load()
   }
   const myTotal = ['q_fit', 'q_evidence', 'q_reversible', 'q_payback'].every(k => my[k] != null) ? ['q_fit', 'q_evidence', 'q_reversible', 'q_payback'].reduce((s, k) => s + my[k], 0) : null
   const oy = opexYear(a)
@@ -649,9 +649,12 @@ function FinanceImport({ t, lang, refd, profile, book, show, onClose, onDone }) 
         if (!sh.year) continue
         for (const l of sh.lines) {
           const dep = Number(map[l.owner]); if (!dep) continue
-          let line = ex.find(x => x.fiscal_year === sh.year && x.department_id === dep && (l.gl ? x.gl_code === l.gl : x.kind === 'capex' && x.name === l.name))
+          const same = (x) => x.fiscal_year === sh.year && x.department_id === dep
+          // a hand-typed line may hold just the code ("3404001") or the code with spaces; finance's file names the cost centre too
+          let line = l.gl ? ex.find(x => same(x) && x.gl_code === l.gl) || ex.find(x => same(x) && x.kind !== 'capex' && String(x.gl_code || '').replace(/\s/g, '') === l.code) : ex.find(x => same(x) && x.kind === 'capex' && (x.name === l.name))
           if (line) {
             const patch = sh.type === 'plan' ? { monthly: l.monthly } : sh.type === 'capex' ? { amount: l.budget, note: l.note } : { amount: l.budget, name: l.name }
+            if (l.gl && line.gl_code !== l.gl) patch.gl_code = l.gl
             const { error } = await supabase.from('budget_lines').update(patch).eq('id', line.id); if (error) throw error
             Object.assign(line, patch); changed++
           } else {
@@ -870,7 +873,7 @@ function Budget({ t, lang, profile, refd, show }) {
               <td style={{ whiteSpace: 'nowrap' }}><Flag n={x} />{!l.locked && canWrite && <button className="btn ghost sm" onClick={() => delLine(l)}>✕</button>}{isAdmin && <button className="btn ghost sm" title={l.locked ? t('b_unlock') : t('b_lock')} onClick={() => lockLine(l, !l.locked)}>{l.locked ? '🔓' : '🔒'}</button>}</td></tr>
               {why[l.id] && (() => { const ys = [...new Set(items.flatMap(it => Object.keys(it.by)))].sort(); return <tr><td colSpan={7}><table className="tb sub"><tbody>{items.map((it, i) => <tr key={i}><td>{it.vendor}</td><td>{it.item}</td><td className="m">{it.price ? fmt(it.price) + (it.count ? ' × ' + it.count : '') : ''}</td>{ys.map(y => <td key={y}>{it.by[y] ? <><span className="m">{y} </span>{fmt(it.by[y])}</> : ''}</td>)}</tr>)}</tbody></table></td></tr> })()}</Fragment> })}
           </tbody></table></div>}
-          {depCapex(d.id).length > 0 && <><p className="k" style={{ marginTop: 12 }}>🏗️ {t('b_capex_list')}</p><div style={{ overflowX: 'auto' }}><table className="tb"><tbody>{depCapex(d.id).map(l => <tr key={l.id}><td>{l.name}{l.note && <div className="m">{l.note}</div>}</td><td>{fmt(l.amount)}</td><td style={{ whiteSpace: 'nowrap' }}>{!l.locked && canWrite && <button className="btn ghost sm" onClick={() => delLine(l)}>✕</button>}</td></tr>)}</tbody></table></div></>}
+          {depCapex(d.id).length > 0 && <><p className="k" style={{ marginTop: 12 }}>🏗️ {t('b_capex_list')}</p><div style={{ overflowX: 'auto' }}><table className="tb"><tbody>{depCapex(d.id).map(l => <tr key={l.id}><td>{l.name}{l.ask_id ? <div className="m">🟢 {t('b_from_room')}</div> : l.note && <div className="m">{l.note}</div>}</td><td>{fmt(l.amount)}</td><td style={{ whiteSpace: 'nowrap' }}>{!l.locked && !l.ask_id && canWrite && <button className="btn ghost sm" onClick={() => delLine(l)}>✕</button>}</td></tr>)}</tbody></table></div></>}
           {rq.length > 0 && <><p className="k" style={{ marginTop: 12 }}>{t('b_requests')}</p>{rq.map(r => <div key={r.id} className="req"><div style={{ flex: 1 }}>{r.title}<div className="m">{r.profiles?.name || r.profiles?.email} · {new Date(r.created_at).toLocaleDateString()}{r.note ? ' — ' + r.note : ''}</div></div>
             <div className="amt"><b>{fmt(r.amount)}</b></div><span className={'pill ' + ({ open: 'with_director', approved: 'green', rejected: 'gate', booked: 'submitted' }[r.status])}>{t('b_st_' + r.status)}</span>
             {r.status === 'open' && r.requested_by === profile.id && <button className="btn ghost" onClick={() => withdraw(r)}>{t('withdraw')}</button>}</div>)}</>}
