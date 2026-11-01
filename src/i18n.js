@@ -41,6 +41,11 @@ const dict = {
     invite_ok: 'Sign-in link sent to', signed_in: 'Signed in', people_hint: 'Add each person once. Head = fills the cards of one department. Director = sees the whole directorate, approves and submits to the room. Press Invite and they get their sign-in link by e-mail.',
     flow_head: 'You fill the card → send it to your director → your director submits it to the room.', flow_dir: 'Your heads send you their cards. Approve and submit to the room, or send back with a comment.',
     all_asks: 'All asks', missing_send: 'Before sending, fill in',
+    step_goal: 'Goal', step_money: 'Money', step_return: 'Return', step_ifnot: 'If not funded', step_review: 'Check & send', next: 'Next', back_step: 'Back', edit: 'Edit',
+    review_title: 'Check your answers', review_ok: 'Everything needed is filled in. Read it once, then send.', review_missing: 'Still missing before you can send:',
+    saving: 'Saving…', saved_at: 'Saved', needed: 'needed to send', approx: '≈', million: 'million EGP', thousand: 'thousand EGP', egp: 'EGP',
+    board_title: 'Your departments', board_not_started: 'Not started', board_head: 'Head', board_cards: 'Cards', board_with_you: 'With you', board_room: 'In the room',
+    projector: 'Projector mode', projector_exit: 'Exit projector', keys_hint: 'Use ← → keys to move between cards.',
     history: 'History', lang: 'العربية',
   },
   ar: {
@@ -85,8 +90,19 @@ const dict = {
     invite_ok: 'اتبعت لينك الدخول إلى', signed_in: 'دخل', people_hint: 'ضيف كل شخص مرة واحدة. رئيس القسم = يملأ كروت قسمه. المدير = يشوف القطاع كله، يوافق ويبعت للغرفة. اضغط "دعوة" ويوصله لينك الدخول على الإيميل.',
     flow_head: 'انت تملأ الكارت ← تبعته لمديرك ← مديرك يبعته للغرفة.', flow_dir: 'رؤساء الأقسام بيبعتولك كروتهم. وافق وابعت للغرفة، أو رجّع بتعليق.',
     all_asks: 'كل الطلبات', missing_send: 'قبل الإرسال كمّل',
+    step_goal: 'الهدف', step_money: 'الفلوس', step_return: 'العائد', step_ifnot: 'لو اتأجل', step_review: 'راجع وابعت', next: 'التالي', back_step: 'رجوع', edit: 'تعديل',
+    review_title: 'راجع إجاباتك', review_ok: 'كل المطلوب متكتب. اقراه مرة وابعت.', review_missing: 'لسه ناقص قبل الإرسال:',
+    saving: 'بيتحفظ…', saved_at: 'اتحفظ', needed: 'مطلوب قبل الإرسال', approx: '≈', million: 'مليون جنيه', thousand: 'ألف جنيه', egp: 'جنيه',
+    board_title: 'إداراتك', board_not_started: 'لسه ما بدأش', board_head: 'رئيس القسم', board_cards: 'كروت', board_with_you: 'عندك', board_room: 'في الغرفة',
+    projector: 'وضع العرض', projector_exit: 'خروج من العرض', keys_hint: 'استخدم أسهم ← → للتنقل بين الكروت.',
     history: 'السجل', lang: 'English',
   }
 }
 export const t = (lang, k) => (dict[lang] && dict[lang][k]) || dict.en[k] || k
 export const fmt = (n) => (n == null || n === '' ? '—' : Number(n).toLocaleString('en-EG', { maximumFractionDigits: 0 }))
+// money in words under the box, always Latin digits so it matches Excel: "≈ 1.25 million EGP"
+export const approx = (lang, n) => {
+  const v = Number(n); if (!v) return ''
+  const f = (x) => x.toLocaleString('en', { maximumFractionDigits: 2 })
+  return v >= 1e6 ? `≈ ${f(v / 1e6)} ${t(lang, 'million')}` : v >= 1e3 ? `≈ ${f(v / 1e3)} ${t(lang, 'thousand')}` : `${f(v)} ${t(lang, 'egp')}`
+}
