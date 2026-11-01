@@ -3,6 +3,7 @@ import { supabase } from './supabase'
 import { t as T, fmt, approx } from './i18n'
 import * as XLSX from 'xlsx'
 import { readWorkbook, notice, planToDate } from './finance'
+import { HELP } from './help'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
 const OPEX = ['opex_people', 'opex_training', 'opex_consumables', 'opex_maintenance', 'opex_licences', 'opex_other']
@@ -40,18 +41,38 @@ export default function App() {
   return <Main t={t} lang={lang} setLang={setLang} profile={profile} />
 }
 
+/* "فهمني" mode: a side panel that explains whatever field or button you touch (anything with data-help) */
+function HelpPanel({ lang, onClose }) {
+  const [key, setKey] = useState('intro')
+  useEffect(() => {
+    const pick = (e) => { const el = e.target.closest?.('[data-help]'); if (el && el.closest('.helpp') == null) { const k = el.getAttribute('data-help'); if (HELP[lang][k]) setKey(k) } }
+    document.addEventListener('focusin', pick); document.addEventListener('click', pick, true); document.addEventListener('mouseover', pick)
+    return () => { document.removeEventListener('focusin', pick); document.removeEventListener('click', pick, true); document.removeEventListener('mouseover', pick) }
+  }, [lang])
+  const h = HELP[lang][key] || HELP[lang].intro
+  return <aside className="helpp" aria-live="polite">
+    <div className="rh"><b>💡 {lang === 'ar' ? 'فهمني' : 'Explain'}</b><button className="btn ghost sm" onClick={onClose}>✕</button></div>
+    <h3>{h.t}</h3><p>{h.b}</p>{h.how && <p className="how">👉 {h.how}</p>}
+    {key !== 'intro' && <button className="btn ghost sm" onClick={() => setKey('intro')}>{lang === 'ar' ? 'إزاي أستخدم الوضع ده؟' : 'How does this mode work?'}</button>}
+  </aside>
+}
+
 function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
+  const [explain, setExplain] = useState(() => { try { return localStorage.getItem('sb_explain') === '1' } catch { return false } })
+  useEffect(() => { document.body.classList.toggle('explain', explain); try { localStorage.setItem('sb_explain', explain ? '1' : '0') } catch { /* private mode */ } }, [explain])
   return <>
     <div className="top">
       <img src="/logo.png" alt="" />
       <div className="brand">smart<span>Budget</span> <span className="m" style={{ color: '#C9D6DF', fontWeight: 400 }}>· {t('tagline')}</span></div>
       <div className="sp" />
       {profile && <div className="who">{profile.name || profile.email}<br />{(profile.departments || profile.directorates)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''}</div>}
-      <button className="btn ghost" style={{ color: '#fff', borderColor: '#4B6A80' }} onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
-      {profile && <button className="btn ghost" style={{ color: '#fff', borderColor: '#4B6A80' }} onClick={() => supabase.auth.signOut()}>{t('sign_out')}</button>}
+      <button className={'btn glass' + (explain ? ' on' : '')} aria-pressed={explain} onClick={() => setExplain(!explain)}>? {t('explain')}</button>
+      <button className="btn glass" data-help="lang" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
+      {profile && <button className="btn glass" onClick={() => supabase.auth.signOut()}>{t('sign_out')}</button>}
     </div>
-    {tabs && <div className="tabs">{tabs.map(x => <button key={x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>}
+    {tabs && <div className="tabs">{tabs.map(x => <button key={x.id} data-help={'tab_' + x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>}
     {children}
+    {explain && <HelpPanel lang={lang} onClose={() => setExplain(false)} />}
   </>
 }
 
@@ -176,7 +197,7 @@ function Asks({ t, lang, profile, refd, show }) {
   return <>
     <div className="hero"><p className="k">{refd.cycle.name}{!head && (profile.directorates || profile.departments) ? ' · ' + (profile.directorates || profile.departments)[lang === 'ar' ? 'name_ar' : 'name_en'] : ''}</p><h2>{head ? t('nav_asks') : t('all_asks')}</h2>
       <p className="m">{list.length === 0 ? t('no_asks') : head ? t('flow_head') : t('flow_dir')}</p>
-      <div className="btns"><button className="btn p" onClick={() => setEdit({})}>＋ {t('new_ask')}</button></div></div>
+      <div className="btns"><button className="btn p" data-help="new_ask" onClick={() => setEdit({})}>＋ {t('new_ask')}</button></div></div>
     {!head && <Board t={t} lang={lang} profile={profile} refd={refd} list={list} />}
     {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(sums.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(sums.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(sums.capex + sums.opex)}</b></div></div>}
     {groups.map(([label, items], gi) => items.length > 0 && <div key={gi}>
@@ -194,17 +215,17 @@ function Field({ a, set, canEdit, k, label, hint, type = 'text', area, need, t }
   const filled = String(a[k] ?? '').trim() !== ''
   const bad = need && canEdit && left && !filled
   const props = { value: a[k] ?? '', disabled: !canEdit, onChange: e => set(k, e.target.value), onBlur: () => setLeft(true), className: bad ? 'bad' : '' }
-  return <label className="f"><span>{label}{hint ? ' — ' + hint : ''}{need && filled && <b className="ok"> ✓</b>}</span>
+  return <label className="f" data-help={k}><span>{label}{hint ? ' — ' + hint : ''}{need && filled && <b className="ok"> ✓</b>}</span>
     {area ? <textarea {...props} /> : <input type={type} {...props} />}
     {bad && <small className="need">{t('needed')}</small>}</label>
 }
 
 // typed digits (Latin or Arabic-Indic) → plain number string; shown back with thousands separators
 const digits = (v) => String(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\D/g, '')
-function MoneyInput({ a, set, canEdit, k, label, lang, disabled, need, t }) {
+function MoneyInput({ a, set, canEdit, k, label, lang, disabled, need, t, help }) {
   const v = a[k] === '' || a[k] == null ? '' : Number(a[k]).toLocaleString('en')
   const filled = !!Number(a[k])
-  return <label className="f"><span>{label}{need && filled && <b className="ok"> ✓</b>}</span>
+  return <label className="f" data-help={help || k}><span>{label}{need && filled && <b className="ok"> ✓</b>}</span>
     <input type="text" inputMode="numeric" dir="ltr" value={disabled ? '' : v} disabled={!canEdit || disabled} placeholder="0" onChange={e => { const d = digits(e.target.value); set(k, d === '' ? '' : String(Number(d))) }} />
     {!disabled && filled && <small className="words">{approx(lang, a[k])}</small>}</label>
 }
@@ -354,11 +375,11 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
     <div className="btns" style={{ marginTop: 0, alignItems: 'center' }}><button className="btn" onClick={onDone}>{BK} {t('back')}</button>{a.status && <span className={'pill ' + a.status}>{t(a.status)}</span>}
       <span className="m saved">{autoBusy ? t('saving') : savedAt ? `✓ ${t('saved_at')} ${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}</span></div>
     {a.director_note && ['returned', 'draft', 'with_director'].includes(st) && <div className="card o"><p className="k">{t('director_note')}</p><p>{a.director_note}</p></div>}
-    <div className="steps">{STEPS.map((k, n) => <button key={k} className={(n === step ? 'on ' : '') + (n < 4 && !missing.some(([, s]) => s === n) ? 'done' : '')} onClick={() => go(n)}><i>{n < 4 && !missing.some(([, s]) => s === n) ? '✓' : n + 1}</i><span>{t(k)}</span></button>)}</div>
+    <div className="steps" data-help="steps">{STEPS.map((k, n) => <button key={k} className={(n === step ? 'on ' : '') + (n < 4 && !missing.some(([, s]) => s === n) ? 'done' : '')} onClick={() => go(n)}><i>{n < 4 && !missing.some(([, s]) => s === n) ? '✓' : n + 1}</i><span>{t(k)}</span></button>)}</div>
 
     {step === 0 && <>
       <div className="card">{F({ k: 'title', label: t('s_title'), hint: t('s_title_h'), need: true })}
-        {profile.role !== 'head' && <label className="f"><span>{t('department')}</span><DeptSelect value={a.department_id} onChange={v => set('department_id', v)} deps={deps} refd={refd} lang={lang} disabled={!canEdit} blank /></label>}
+        {profile.role !== 'head' && <label className="f" data-help="department"><span>{t('department')}</span><DeptSelect value={a.department_id} onChange={v => set('department_id', v)} deps={deps} refd={refd} lang={lang} disabled={!canEdit} blank /></label>}
       </div>
       <div className="card"><p className="k">{t('s_lane')}</p>
         {F({ k: 'lane_other', label: t('s_other'), hint: t('s_other_hint'), need: !a.register_code })}
@@ -371,9 +392,9 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
         {canEdit && !gl && glHints.map(l => <div key={l.id} className="card o hintc">💡 {t('b_looks_gl')} <b>{glLabel(l)}</b> · {t('b_budget')} {fmt(l.amount)} · {t('b_left')} {fmt(GB.line(l.id).left)} <button className="btn" onClick={() => set('budget_line_id', l.id)}>{t('link_it')}</button></div>)}
         {!gl && !a.link_none && a.department_id && !glHints.length && a.title.trim().length > 4 && GB.lines.length > 0 && <p className="m">ℹ️ {t('b_not_in_gl')}</p>}
         {canEdit && (!linked || !gl) && !a.link_none && <div className="btns" style={{ marginTop: 6 }}>
-          {!linked && <button className={'btn ' + (pick === 'excom' ? 'p' : '')} onClick={() => setPick(pick === 'excom' ? false : 'excom')}>🎯 {t('link_excom')}</button>}
-          {!gl && <button className={'btn ' + (pick === 'gl' ? 'p' : '')} onClick={() => setPick(pick === 'gl' ? false : 'gl')}>📒 {t('link_gl')}</button>}
-          {!linked && !gl && <button className="btn" onClick={() => { set('link_none', true); setPick(false) }}>⚪ {t('link_none')}</button>}
+          {!linked && <button data-help="link_excom" className={'btn ' + (pick === 'excom' ? 'p' : '')} onClick={() => setPick(pick === 'excom' ? false : 'excom')}>🎯 {t('link_excom')}</button>}
+          {!gl && <button data-help="link_gl" className={'btn ' + (pick === 'gl' ? 'p' : '')} onClick={() => setPick(pick === 'gl' ? false : 'gl')}>📒 {t('link_gl')}</button>}
+          {!linked && !gl && <button data-help="link_none" className="btn" onClick={() => { set('link_none', true); setPick(false) }}>⚪ {t('link_none')}</button>}
         </div>}
         {canEdit && pick === 'excom' && !linked && <label className="f"><span>{t('s_register')}</span><select value="" onChange={e => { set('register_code', e.target.value); setPick(false) }}><option value="">—</option>{refd.register.map(r => <option key={r.code} value={r.code}>{regLabel(r)}</option>)}</select></label>}
         {canEdit && pick === 'gl' && !gl && (!a.department_id ? <p className="m">ℹ️ {t('gl_pick_dept')}</p> : !GB.lines.length ? <p className="m">ℹ️ {t('gl_none_yet')}</p>
@@ -385,16 +406,16 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
     {step === 1 && <>
       <div className="card"><p className="k">{t('s_ask')}</p>
         <div className="row">
-          <label className="f"><span>{t('capex_class')}</span><select value={a.capex_class} disabled={!canEdit} onChange={e => set('capex_class', e.target.value)}><option value="none">{t('c_none')}</option><option value="light">{t('c_light')}</option><option value="significant">{t('c_significant')}</option></select></label>
+          <label className="f" data-help="capex_class"><span>{t('capex_class')}</span><select value={a.capex_class} disabled={!canEdit} onChange={e => set('capex_class', e.target.value)}><option value="none">{t('c_none')}</option><option value="light">{t('c_light')}</option><option value="significant">{t('c_significant')}</option></select></label>
           <MoneyInput a={a} set={set} canEdit={canEdit} k="capex_amount" label={t('capex_amount')} lang={lang} t={t} disabled={a.quote_decides} need />
-          <label className="f"><span>{t('quarter')}</span><select value={a.quarter || ''} disabled={!canEdit} onChange={e => set('quarter', e.target.value)}>{QUARTERS.map(q => <option key={q}>{q}</option>)}</select></label>
+          <label className="f" data-help="quarter"><span>{t('quarter')}</span><select value={a.quarter || ''} disabled={!canEdit} onChange={e => set('quarter', e.target.value)}>{QUARTERS.map(q => <option key={q}>{q}</option>)}</select></label>
         </div>
-        <label className="f" style={{ display: 'flex', gap: 10, alignItems: 'center' }}><input type="checkbox" checked={!!a.quote_decides} disabled={!canEdit} onChange={e => set('quote_decides', e.target.checked)} /> {t('quote_decides')}</label>
-        <label className="f"><span>{t('quote')}</span>{canEdit && <input type="file" accept=".pdf,image/*" onChange={upload} />}</label>
+        <label className="f" data-help="quote_decides" style={{ display: 'flex', gap: 10, alignItems: 'center' }}><input type="checkbox" checked={!!a.quote_decides} disabled={!canEdit} onChange={e => set('quote_decides', e.target.checked)} /> {t('quote_decides')}</label>
+        <label className="f" data-help="quote"><span>{t('quote')}</span>{canEdit && <input type="file" accept=".pdf,image/*" onChange={upload} />}</label>
         {files.map(f => <div key={f.id}><a href="#" onClick={e => { e.preventDefault(); open(f.path) }}>📎 {f.name}</a></div>)}
       </div>
       <div className="card o"><p className="k">{t('s_tcd')}</p><p className="m">{t('tcd_hint')}</p>
-        <div className="row">{OPEX.map(k => <MoneyInput a={a} set={set} canEdit={canEdit} key={k} k={k} label={t(k)} lang={lang} t={t} />)}</div>
+        <div className="row">{OPEX.map(k => <MoneyInput a={a} set={set} canEdit={canEdit} key={k} k={k} help="opex" label={t(k)} lang={lang} t={t} />)}</div>
         {F({ k: 'opex_notes', label: t('opex_notes'), area: true })}
         <div className="tot"><div><span>{t('capex_lbl')}</span><b>{a.quote_decides ? '—' : fmt(cx)}</b></div><div className="o"><span>{t('opex_lbl')}</span><b>{fmt(oy)}</b></div><div><span>{t('year_one')} · {t('yearly_after')}</span><b>{fmt(cx + oy)} · {fmt(oy)}</b></div></div>
       </div>
@@ -427,9 +448,9 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
     {canEdit && <div className="btns">
       {step > 0 && <button className="btn" onClick={() => go(step - 1)}>{BK} {t('back_step')}</button>}
       {step < 4 && <button className="btn p" onClick={() => go(step + 1)}>{t('next')} {NX}</button>}
-      {(step === 4 || !authoring) && <button className="btn" disabled={busy} onClick={() => save(st === 'returned' ? 'returned' : st)}>{t('save')}</button>}
-      {step === 4 && !isDir && ['draft', 'returned', 'yellow'].includes(st) && <button className="btn p" disabled={busy} onClick={() => save('with_director')}>{t('send_director')} {NX}</button>}
-      {step === 4 && isDir && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && <button className="btn p" disabled={busy} onClick={() => save('submitted')}>{t('submit_room')} {NX}</button>}
+      {(step === 4 || !authoring) && <button className="btn" data-help="save" disabled={busy} onClick={() => save(st === 'returned' ? 'returned' : st)}>{t('save')}</button>}
+      {step === 4 && !isDir && ['draft', 'returned', 'yellow'].includes(st) && <button className="btn p" data-help="send" disabled={busy} onClick={() => save('with_director')}>{t('send_director')} {NX}</button>}
+      {step === 4 && isDir && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && <button className="btn p" data-help="send" disabled={busy} onClick={() => save('submitted')}>{t('submit_room')} {NX}</button>}
       {step === 4 && isDir && a.id && st === 'with_director' && <button className="btn y" disabled={busy} onClick={() => save('returned')}>↩ {t('send_back')}</button>}
       {step === 4 && a.id && st === 'draft' && <button className="btn ghost" onClick={del}>{t('delete')}</button>}
       {step === 4 && a.id && st === 'submitted' && <button className="btn ghost" onClick={withdraw}>{t('withdraw')}</button>}
@@ -737,11 +758,11 @@ function Budget({ t, lang, profile, refd, show }) {
 
   return <>
     <div className="hero"><div className="row" style={{ alignItems: 'center' }}><div><p className="k">{t('b_kicker')}</p><h2>{t('b_title')}</h2><p className="m">{t('b_hint')}</p></div>
-      <div style={{ flex: 'none' }}><select value={year} onChange={e => setYear(Number(e.target.value))}>{YEARS.map(y => <option key={y}>{y}</option>)}</select></div></div>
+      <div style={{ flex: 'none' }} data-help="b_year"><select value={year} onChange={e => setYear(Number(e.target.value))}>{YEARS.map(y => <option key={y}>{y}</option>)}</select></div></div>
       {canWrite && <div className="btns">
-        <button className={'btn ' + (panel === 'afford' ? 'p' : '')} onClick={() => setPanel(panel === 'afford' ? null : 'afford')}>🧮 {t('b_afford')}</button>
-        <button className={'btn ' + (panel === 'spend' ? 'p' : '')} onClick={() => setPanel(panel === 'spend' ? null : 'spend')}>🧾 {t('b_record')}</button>
-        <button className={'btn ' + (panel === 'lines' ? 'p' : '')} onClick={() => setPanel(panel === 'lines' ? null : 'lines')}>📒 {t('b_my_lines')}</button>
+        <button data-help="b_afford" className={'btn ' + (panel === 'afford' ? 'p' : '')} onClick={() => setPanel(panel === 'afford' ? null : 'afford')}>🧮 {t('b_afford')}</button>
+        <button data-help="b_record" className={'btn ' + (panel === 'spend' ? 'p' : '')} onClick={() => setPanel(panel === 'spend' ? null : 'spend')}>🧾 {t('b_record')}</button>
+        <button data-help="b_my_lines" className={'btn ' + (panel === 'lines' ? 'p' : '')} onClick={() => setPanel(panel === 'lines' ? null : 'lines')}>📒 {t('b_my_lines')}</button>
       </div>}</div>
 
     {panel === 'afford' && <div className="card" style={{ marginTop: 12 }}><p className="k">{t('b_afford')}</p>
@@ -783,7 +804,7 @@ function Budget({ t, lang, profile, refd, show }) {
       {nl.amount && nl.last_year && Math.abs(Number(nl.amount) - Number(nl.last_year)) / Number(nl.last_year) > 0.1 && <p className="m">ℹ️ {Number(nl.amount) > Number(nl.last_year) ? t('b_up') : t('b_down')} {Math.round(100 * Math.abs(Number(nl.amount) - Number(nl.last_year)) / Number(nl.last_year))}% — {t('b_why_change')}</p>}
     </div>}
 
-    {canDecide && pending.length > 0 && <div className="card o" style={{ marginTop: 12 }}><p className="k">{t('b_waiting')} · {pending.length}</p>
+    {canDecide && pending.length > 0 && <div className="card o" data-help="b_pending" style={{ marginTop: 12 }}><p className="k">{t('b_waiting')} · {pending.length}</p>
       {pending.map(r => { const d = refd.departments.find(x => x.id === r.department_id); const n = r.budget_line_id ? B.line(r.budget_line_id) : B.dep(r.department_id)
         return <div key={r.id} className="req"><div style={{ flex: 1 }}><b>{r.title}</b><div className="m">{nm(d)} · {r.profiles?.name || r.profiles?.email} · {new Date(r.created_at).toLocaleDateString()}</div>
           <div className="m">{n.left >= 0 ? '✅ ' + t('b_fits') : '⚠️ ' + t('b_over_by') + ' ' + fmt(-n.left)}</div></div>
@@ -795,11 +816,11 @@ function Budget({ t, lang, profile, refd, show }) {
       if (!ls.length && !rq.length && !man.length && profile.role !== 'head') return null
       return <div key={d.id} className="card" style={{ marginTop: 12 }}>
         <div className="rh"><h2 style={{ margin: 0 }}>{nm(d)}</h2><Flag n={n} /></div>
-        <div className="tot four"><div><span>{t('b_budget')}</span><b>{fmt(n.budget)}</b></div><div><span>{t('b_spent')}</span><b>{fmt(n.spent)}</b></div><div className="o"><span>{t('b_committed')}</span><b>{fmt(n.promised)}</b></div><div className={n.left < 0 ? 'neg' : 'pos'}><span>{t('b_left')}</span><b>{fmt(n.left)}</b></div></div>
+        <div className="tot four" data-help="b_tiles"><div><span>{t('b_budget')}</span><b>{fmt(n.budget)}</b></div><div><span>{t('b_spent')}</span><b>{fmt(n.spent)}</b></div><div className="o"><span>{t('b_committed')}</span><b>{fmt(n.promised)}</b></div><div className={n.left < 0 ? 'neg' : 'pos'}><span>{t('b_left')}</span><b>{fmt(n.left)}</b></div></div>
         {n.budget > 0 && <Bar n={n} />}<AxNote n={n} />
         {depCapex(d.id).length > 0 && <p className="m">🏗️ {t('b_capex_list')}: <b>{fmt(depCapex(d.id).reduce((s, l) => s + Number(l.amount), 0))}</b> · {depCapex(d.id).length} {t('fi_items')}</p>}
         {ls.length === 0 && <p className="m">{t('b_no_lines')} {canWrite && <a href="#" onClick={e => { e.preventDefault(); setNl({ ...nl, dep: d.id }); setPanel('lines'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{t('b_add_line')} →</a>}</p>}
-        {(ls.length > 0 || rq.length > 0 || man.length > 0) && <button className="btn ghost" style={{ marginTop: 8 }} onClick={() => setOpen({ ...open, [d.id]: !open[d.id] })}>{open[d.id] ? '▾' : '▸'} {t('b_details')}</button>}
+        {(ls.length > 0 || rq.length > 0 || man.length > 0) && <button className="btn ghost" data-help="b_lines" style={{ marginTop: 8 }} onClick={() => setOpen({ ...open, [d.id]: !open[d.id] })}>{open[d.id] ? '▾' : '▸'} {t('b_details')}</button>}
         {open[d.id] && <>
           {ls.length > 0 && <div style={{ overflowX: 'auto' }}><table className="tb" style={{ marginTop: 8 }}><thead><tr><th>{t('b_line')}</th><th>{t('b_last_year')}</th><th>{t('b_budget')}</th><th>{t('b_spent')}</th><th>{t('b_committed')}</th><th>{t('b_left')}</th><th></th></tr></thead><tbody>
             {ls.map(l => { const x = B.line(l.id); const pn = planToDate(l.monthly, year); const items = (l.details || []).flatMap(g => g.items.map(it => ({ ...it, years: g.years })))
@@ -820,7 +841,7 @@ function Budget({ t, lang, profile, refd, show }) {
 
     {isAdmin && <div className="card n" style={{ marginTop: 12 }}><p className="k">{t('b_admin')} · {year}</p><p className="m">{t('b_admin_hint')}</p>
       <div className="btns">
-        <label className="btn p">⬆ {t('b_up_finance')}<input type="file" accept=".xlsx,.xls" hidden onChange={upFinance} /></label>
+        <label className="btn p" data-help="b_up_finance">⬆ {t('b_up_finance')}<input type="file" accept=".xlsx,.xls" hidden onChange={upFinance} /></label>
         <label className="btn">⬆ {t('b_up_lines')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upLines} /></label>
         <label className="btn">⬆ {t('b_up_acts')}<input type="file" accept=".xlsx,.xls,.csv" hidden onChange={upActs} /></label>
         <button className="btn ghost" onClick={() => template('lines')}>⬇ {t('b_tpl_lines')}</button>
