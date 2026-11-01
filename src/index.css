@@ -224,3 +224,4 @@ body.explain .tabs [data-help]{outline-offset:-4px}
 
 @media (max-width:700px){.land-mark{width:56px;height:64px;top:18px;inset-inline-end:16px}.hero.land h1,.hero.land .lead{max-width:calc(100% - 64px)}.stage .title{font-size:34px}}
 @media (prefers-reduced-motion:reduce){.rise,.stage,.stage *,.land-mark *{animation:none!important}.feat:hover{transform:none}}
+a.brand{color:#fff;text-decoration:none}

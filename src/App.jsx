@@ -23,6 +23,8 @@ export default function App() {
   const [profile, setProfile] = useState(null)
   const [lang, setLang] = useState(localStorage.getItem('sb_lang') || 'en')
   const t = useCallback((k) => T(lang, k), [lang])
+  const [welcome, setWelcome] = useState(location.hash === '#welcome')
+  useEffect(() => { const on = () => setWelcome(location.hash === '#welcome'); window.addEventListener('hashchange', on); return () => window.removeEventListener('hashchange', on) }, [])
   useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = lang; localStorage.setItem('sb_lang', lang) }, [lang])
 
   useEffect(() => {
@@ -36,7 +38,7 @@ export default function App() {
   }, [session])
 
   if (session === undefined) return null
-  if (!session) return <Login t={t} lang={lang} setLang={setLang} />
+  if (!session || welcome) return <Login t={t} lang={lang} setLang={setLang} preview={!!session} onBack={() => { history.replaceState(null, '', ' '); setWelcome(false) }} />
   if (!profile) return <Shell t={t} lang={lang} setLang={setLang} profile={null}><div className="wrap"><div className="card">…</div></div></Shell>
   if (profile.role === 'pending') return <Shell t={t} lang={lang} setLang={setLang} profile={profile}><div className="wrap"><div className="card o"><h2>{t('pending_title')}</h2><p>{t('pending_text')}</p><p className="m">{profile.email}</p></div></div></Shell>
   return <Main t={t} lang={lang} setLang={setLang} profile={profile} />
@@ -64,11 +66,16 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
   return <>
     <div className="top">
       <img src="/logo.png" alt="" />
-      <div className="brand">smart<span>Budget</span> <span className="m" style={{ color: '#C9D6DF', fontWeight: 400 }}>· {t('tagline')}</span></div>
+      <a className="brand" href="#welcome" title="Welcome" onClick={() => { try { sessionStorage.removeItem('sb_intro') } catch { /* private mode */ } }}>smart<span>Budget</span> <span className="m" style={{ color: '#C9D6DF', fontWeight: 400 }}>· {t('tagline')}</span></a>
       <div className="sp" />
       {profile && <div className="who">{profile.name || profile.email}<br />{(profile.departments || profile.directorates)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''}</div>}
       <button className={'btn glass' + (explain ? ' on' : '')} aria-pressed={explain} onClick={() => setExplain(!explain)}>? {t('explain')}</button>
       <button className="btn glass" data-help="lang" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
+      {profile && <button className="btn glass" title={t('pw_set')} onClick={async () => {
+        const p1 = prompt(t('pw_set') + ' (8+)'); if (!p1) return; if (p1.length < 8) { alert(t('pw_short')); return }
+        const p2 = prompt(t('pw_again')); if (p1 !== p2) { alert(t('pw_nomatch')); return }
+        const { error } = await supabase.auth.updateUser({ password: p1 }); alert(error ? error.message : '✓ ' + t('pw_ok'))
+      }}>🔑</button>}
       {profile && <button className="btn glass" onClick={() => supabase.auth.signOut()}>{t('sign_out')}</button>}
     </div>
     {tabs && <div className="tabs">{tabs.map(x => <button key={x.id} data-help={'tab_' + x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>}
@@ -77,10 +84,17 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
   </>
 }
 
-function Login({ t, lang, setLang }) {
+function Login({ t, lang, setLang, preview, onBack }) {
   const [email, setEmail] = useState(''); const [sent, setSent] = useState(false); const [err, setErr] = useState(null); const [busy, setBusy] = useState(false)
+  // two ways in: the e-mail link (always works), or a password the person set once from the 🔑 button
+  const [usePw, setUsePw] = useState(() => { try { return localStorage.getItem('sb_pw') === '1' } catch { return false } }); const [pw, setPw] = useState('')
   const go = async (e) => {
     e.preventDefault(); setBusy(true); setErr(null)
+    if (usePw) {
+      const { error } = await supabase.auth.signInWithPassword({ email: email.trim(), password: pw })
+      setBusy(false); if (error) setErr(t('pw_wrong')); else { try { localStorage.setItem('sb_pw', '1') } catch { /* private mode */ } }
+      return
+    }
     const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: window.location.origin } })
     setBusy(false); if (error) setErr(error.message); else setSent(true)
   }
@@ -103,22 +117,24 @@ function Login({ t, lang, setLang }) {
       <div className="hero land">
         <div className="land-mark" aria-hidden="true"><div className="beam slow" /><img src="/mark.png" alt="" /></div>
         <p className="k rise" style={{ '--d': '0s' }}>{t('land_kicker')}</p><h1 className="rise" style={{ '--d': '.1s' }}>{t('land_title')}</h1><p className="lead rise" style={{ '--d': '.2s' }}>{t('land_lead')}</p>
-        <div className="btns rise" style={{ '--d': '.3s', marginTop: 0, marginBottom: 18 }}><button className="btn p" onClick={() => { const el = document.querySelector('.login input[type=email]'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el?.focus(), 400) }}>{t('login_title')} {lang === 'ar' ? '←' : '→'}</button></div>
+        <div className="btns rise" style={{ '--d': '.3s', marginTop: 0, marginBottom: 18 }}><button className="btn p" onClick={() => { if (preview) { onBack(); return } const el = document.querySelector('.login input[type=email]'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el?.focus(), 400) }}>{preview ? t('back_app') : t('login_title')} {lang === 'ar' ? '←' : '→'}</button></div>
         <button className="btn glass snd" aria-pressed={sound} title={t('land_sound')} onClick={toggleSound}>{sound ? '🔊' : '🔈'}</button>
         <div className="feats">{[['🧭', 'land_f1'], ['💰', 'land_f2'], ['🗳️', 'land_f3'], ['💡', 'land_f4']].map(([i, k], n) => <div key={k} className="feat rise" style={{ '--d': (0.35 + n * 0.12) + 's' }}><span>{i}</span><b>{t(k + '_t')}</b><p>{t(k)}</p></div>)}</div></div>
     </div>
-    <div className="wrap login">
+    {preview ? <div className="wrap login"><div className="card center rise" style={{ '--d': '.8s' }}><img src="/logo.png" alt="Al Manar Group" /><div className="btns" style={{ justifyContent: 'center' }}><button className="btn p" onClick={onBack}>{t('back_app')} {lang === 'ar' ? '←' : '→'}</button></div></div></div> : <div className="wrap login">
       <div className="card center rise" style={{ '--d': '.8s' }}>
         <img src="/logo.png" alt="Al Manar Group" />
         <h1>{t('login_title')}</h1>
         {sent ? <p className="m">{t('link_sent')}</p> : <form onSubmit={go}>
-          <p className="m">{t('login_hint')}</p>
-          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@almanargroup.com" />
-          <div className="btns" style={{ justifyContent: 'center' }}><button className="btn p" disabled={busy}>{t('send_link')}</button></div>
+          <p className="m">{usePw ? t('pw_hint') : t('login_hint')}</p>
+          <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@almanargroup.com" autoComplete="username" />
+          {usePw && <input type="password" required value={pw} onChange={e => setPw(e.target.value)} placeholder={t('pw')} autoComplete="current-password" style={{ marginTop: 10, width: '100%', padding: '11px 12px', border: '1px solid #D3DCE3', borderRadius: 10 }} />}
+          <div className="btns" style={{ justifyContent: 'center' }}><button className="btn p" disabled={busy}>{usePw ? t('login_title') : t('send_link')}</button></div>
+          <p><a href="#" onClick={e => { e.preventDefault(); setUsePw(!usePw); setErr(null) }}>{usePw ? t('pw_use_link') : t('pw_use')}</a></p>
           {err && <p className="err">{err}</p>}
         </form>}
       </div>
-    </div>
+    </div>}
   </Shell>
 }
 
