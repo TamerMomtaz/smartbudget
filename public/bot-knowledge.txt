@@ -1,0 +1,192 @@
+# How smartBudget works (en)
+One place for two jobs. In November we ask for next year’s money. All year we watch how much is left. This page walks the whole journey once, start to finish.
+## The two halves
+My asks is for Budget 2027. Each department writes a card for every piece of new money it needs: a machine, a project, a hire. The cards are pitched in the room, and the room decides.
+Budget is for the whole year. Each department keeps its GL lines, records what it spends, and sees what is left. Approved cards land here by themselves as CAPEX lines.
+Tip: Short version: asks are what we want; the budget is what we got and how we spend it.
+## Who does what
+Department head: writes the cards and the GL lines for the department, and records spending.
+Director: reads the cards from their departments, sends each one back with a note or forwards it to the room.
+The room (ExCom): hears the pitches, scores each card, and marks the decision.
+Admin: invites people, uploads finance’s Excel, and keeps the lists tidy.
+## 1 · Write a card
+1. Goal: what you want and why, in plain words. Link it to an ExCom goal, to an existing GL line, or choose “Neither” if it fits no line yet.
+2. Money: the CAPEX amount, whether it is a project or an asset, the quarter you need it, and whether a quote decides the figure. Add the yearly running cost (OPEX) if there is one.
+3. Return: what it gives back and when: saving, capacity, safety, compliance.
+4. If not funded: what happens if we wait a year, and what we would stop doing instead.
+5. Check & send: read it once on one screen, then send it to your director.
+Tip: Not sure what a field means? Turn on “? Explain” at the top. Every field then explains itself in a side panel.
+## 2 · The director reviews
+The card shows With my director. The director either sends it back with a note (you see Sent back, fix it and send again) or forwards it to the room (Submitted).
+## 3 · The room
+On pitch day the cards are shown one by one, on a projector if you like. Each person in the room scores four questions from 0 to 3:
+Fit with the engine or a station · Evidence behind the figures · Reversible / asset-light · Payback or a gate it opens.
+The total is out of 12. 10 or more reads green, 6 to 9 yellow, below 6 orange. The colour is a guide; the room makes the call:
+🟢 Funded · 🟡 Come back (with more evidence) · 🟠 Waits for a gate (for example, after a trial or a contract).
+## 4 · Funded cards join the budget
+When the room marks a card Funded, it appears by itself in that department’s 2027 budget, in the CAPEX list, marked “Approved in the room”. Nobody types it twice.
+If the room changes its mind, the line leaves with the card. Once finance locks the line, it stays.
+## 5 · GL lines for the year
+Running costs live in GL lines: maintenance, fuel, calibration, consulting, and so on. There are two ways they get in:
+1. The department writes them under Budget → “Our GL lines”, with last year’s figure next to each line.
+2. Finance sends its Excel and the admin uploads it with “Upload a finance Excel”. The file is matched by GL code, so the same lines are updated, not copied: the budget, what was spent so far (AX), last year, the monthly plan and the vendor breakdown.
+Tip: Before importing, the upload shows what looks wrong: lines over budget, money spent with no budget, and numbers that disagree between tabs.
+## 6 · Spending all year
+Record a spend on its line as it happens, or ask for money that is not in a line yet. Each line shows Left = budget − spent − promised, and Plan by now shows what the monthly plan expected up to today, so a line running ahead of plan stands out early.
+## The Budget page, button by button
+🧮 Can I afford this? Pick your department and a line, type an amount, and see at once whether it fits in what is left. If it does, send it as a request.
+🧾 Record spending: write down money when it actually goes out, on the line it belongs to.
+📒 Our GL lines: your department’s own budget lines for the year: add, edit, see last year next to each.
+📤 Upload a finance Excel (admin): the one upload you normally need. Finance’s file fills budgets, spending so far, last year, the monthly plan and the CAPEX list.
+Other ways to load data (admin, rarely needed): a plain sheet of budget lines, or a spending export from AX. 📥 Empty sheet downloads a blank file with the right columns, so you can see what to fill.
+Tip: 📤 means upload a file to smartBudget. 📥 means download a file to your computer.
+## Signing in
+The first time, you get an e-mail from noreply@smartbudget.devoneerstechnology.ai with a sign-in link. It is safe: it only opens smartBudget, and it was sent because someone in Al Manar invited you or you asked for it.
+You stay signed in on that browser. To skip the e-mail next time, press 🔑 at the top once and set a password.
+## Questions people ask
+Q: Why link a card to a GL?
+A: It shows the room whether the ask fits inside a line that already runs, or needs new money. Choose “Neither” when nothing fits.
+Q: We already wrote our GL lines. What happens when finance’s file arrives?
+A: The same lines are updated by GL code, even if you typed only the code without the cost centre. Nothing is entered twice.
+Q: Can I change a card after sending it?
+A: While it is with your director, ask them to send it back to you. If the room says “Come back”, you can edit it and send it again. Every change is kept in the card’s history.
+Q: Who sees my cards?
+A: Your department, your director and the admin. The room sees a card only after it is sent to the room, never drafts.
+# Every field and button (en)
+- Explain mode is on: Tap, click or move into any field or button with a dotted outline, and its explanation shows here. Everything still works as usual while this is on. How: Turn it off with the same "? Explain" button at the top.
+- Guide: One page that walks the whole journey: writing a card, the director, the room, how funded cards join the budget, GL lines, finance’s Excel and signing in. How: Open it any time. It works before signing in too, so you can send the link to someone new: smartbudget.devoneerstechnology.ai/#guide
+- Language: Switches the whole platform between Arabic and English. Your cards stay exactly the same; only the labels change. How: Tap once. Your choice is remembered on this browser.
+- Cards (Asks): Each card is one request for Budget 2027: a machine, a project, a fix. Heads write cards, directors review and send them to the room. How: Tap "+ New card", or open an existing one to continue.
+- The room: Where the committee sees each card on the projector and scores it from 0 to 3 on each question. How: Use the arrow keys to move between cards; projector mode makes everything big.
+- Budget (all year): Your live budget: how much each department has, has spent, has promised and has left. It is not just for Budget 2027; it follows you all year. How: Pick the year at the top, then open a department to see its lines.
+- Outputs: The Excel for finance: every card with its CAPEX, running costs and links, ready to send. How: Tap "Download Excel".
+- People: Who uses the platform and their role: head, director, room member, admin. How: Add a person, then send the sign-in link.
+- New card: Starts an empty card. It saves itself as a draft while you type, so nothing is lost if you are called away. How: Give it a one-line title first; the rest can come later.
+- The five steps: The card is split into five short pages: the goal, the money, the return, what happens if it is not funded, and a final check. A ✓ means the step has what it needs. How: Tap any step to jump to it. Nothing is sent until the last step.
+- Title: One line that tells anyone what this is. Good titles name the thing, not the problem. How: Example: "Electric forklift with drum clamp, building 2".
+- Department: Which department owns this card. It decides whose budget lines and whose director see it. How: Choose the department first; the GL lines below depend on it.
+- The goal, in your own words: What this card serves: safety, a legal requirement, replacing a worn machine, growth, a new idea. Any goal is fine; there is no wrong answer here. How: Write one or two plain sentences. If it is a new need, say why now.
+- Link to an ExCom idea (optional): The ExCom has a list of consolidated ideas for the company. If your card serves one of them, linking it shows the room that it supports the strategy. How: Tap, then choose the idea. The app also suggests one when your words match.
+- Link to a GL line: A GL line is a budget line your department already has (for example, machine maintenance). Linking shows whether this is already paid for inside the budget or is new money. How: Choose the department first, then pick the line. You see its budget and what is left.
+- Neither: a new need: Use this when the card is neither an ExCom idea nor inside a current budget line. That is completely fine; many good ideas start here. How: Tap it, then explain in the goal box why it is needed now.
+- What exactly, and what will you do with it?: The detail: what you will buy or do, where, and how it will be used day to day. How: Write as if explaining to someone who has never visited the plant.
+- CAPEX size: Light or significant. Significant asks get a deeper look in the room. How: If unsure, choose light; your director can change it.
+- CAPEX amount (EGP): The one-time cost to buy or build it. The words under the box ("≈ 1.25 million EGP") help catch a missing zero. How: Type the number; commas are added for you. Arabic digits work too.
+- When: The quarter you need the money. It helps finance plan the cash. How: Choose the quarter you would place the order.
+- Waiting for a quote: Tick this when you do not have a price yet and the supplier quote will decide it. How: Attach the quote later when it arrives.
+- Quote or picture: Any supplier quote, photo or drawing that helps the room understand the ask. How: PDF or image. You can attach several.
+- Running costs every year: What this costs each year after it is bought: people, training, consumables, maintenance, licences. The room sees the true cost, not just the price tag. How: Press the kind of cost you need (People, Training, Tools…). Each opens its own fields and works out the yearly figure. A hiring ask can have CAPEX 0.
+- Notes on running costs: Anything that explains the yearly numbers. How: Optional.
+- The return: What gets better, in numbers if you can: hours saved, tonnes more, accidents avoided, money saved. How: One clear benefit beats five vague ones.
+- When the return starts: How long after it arrives until the benefit shows. How: Example: "within 3 months of installation".
+- How we will measure it: The number you will check later to prove it worked. How: Pick something already recorded, like downtime hours or output per shift.
+- When we measure: When the check happens. How: Example: "Q3 2027 review".
+- If it is not funded: What happens if the answer is no: the risk, the cost of waiting, the workaround. How: Be honest; this helps the room compare cards fairly.
+- What we stop doing: Anything this replaces or makes unnecessary, which may save money elsewhere. How: Optional.
+- Send: Heads send the card to their director. Directors send it to the room, or return it with a note. How: Check the summary above first; missing items are listed with a jump button.
+- Save: Saves the card now. Drafts also save themselves a moment after you stop typing. How: The time of the last save shows at the top.
+- Year: Which budget year you are looking at. 2025 is kept for comparison. How: Choose a year; everything on the page follows it.
+- Can I afford this?: An instant answer before you spend: does the money fit in the line or the department, and what is left after it? How: Write what it is for, type the amount, and read the answer. Send it as a request if you want approval.
+- Record spending: Write down money as it is spent, in parts, so your "left" is right today instead of when finance closes the month. AX later checks it. How: Choose the line or the approved request, type the amount and date.
+- Our GL lines: Your department's own budget lines, written by you. Last year's number sits next to each one, so big changes are easy to explain. How: Pick or type a GL code, give it a name and a budget, then add.
+- Budget · Spent · Promised · Left: Budget is what you have. Spent is what AX or your records show (whichever is higher). Promised is requests waiting or approved. Left is what is really free. How: Open "Lines and requests" to see each line.
+- Lines and requests: Each budget line with last year, plan by now, spent and left. Red tags mean over budget or spent with no budget. 📋 opens the vendor breakdown. How: Tap a line's breakdown to see what the money is for.
+- Other ways to load data: Two older, simpler uploads: a plain sheet of budget lines, and an AX spending export. Each has an empty sheet to download so you can see the columns. How: You rarely need these. The finance Excel covers both.
+- Upload a finance Excel: Takes finance's own sheets exactly as they send them (budget vs actual, monthly plan, CAPEX list, vendor breakdowns). Every tab is read. How: Choose the file, match each budget owner to a department, set the "as of" date, then import.
+- Requests waiting for you: Spending requests from your departments, with whether they fit what is left. How: Approve, or reject with a short reason.
+# smartBudget بيشتغل إزاي (ar)
+مكان واحد لشغلانتين. في نوفمبر بنطلب فلوس السنة الجاية، وطول السنة بنتابع فاضل كام. الصفحة دي بتمشي معاك الرحلة كلها من أولها لآخرها.
+## النصّين
+طلباتي خاصة بميزانية 2027. كل قسم يكتب كارت لكل فلوس جديدة محتاجها: ماكينة، مشروع، تعيين. الكروت بتتعرض في الغرفة، والغرفة هي اللي بتقرر.
+الميزانية طول السنة. كل قسم ماسك بنود الـGL بتاعته، بيسجّل اللي بيصرفه، وبيشوف فاضل كام. الكروت اللي بتتعتمد بتنزل هنا لوحدها كبنود CAPEX.
+Tip: باختصار: الطلبات هي اللي عايزينه، والميزانية هي اللي اتعتمد وإزاي بنصرفه.
+## مين بيعمل إيه
+رئيس القسم: بيكتب الكروت وبنود الـGL للقسم، وبيسجّل المصروف.
+المدير: بيقرا كروت أقسامه، ويرجّع الكارت بملاحظة أو يبعته للغرفة.
+الغرفة (اللجنة التنفيذية): بتسمع العرض، وتدّي درجات لكل كارت، وتسجّل القرار.
+الأدمن: بيدعو الناس، ويرفع شيت المالية، وبيظبط القوايم.
+## ١ · اكتب الكارت
+1. الهدف: عايز إيه وليه، بكلام بسيط. اربطه بهدف من أهداف اللجنة التنفيذية، أو ببند GL موجود، أو اختار «ولا ده ولا ده» لو مالوش بند لسه.
+2. الفلوس: مبلغ الـCAPEX، مشروع ولا أصل، محتاجه في أنهي ربع، وهل عرض السعر هو اللي هيحدد الرقم. ولو فيه تكلفة تشغيل سنوية (OPEX) اكتبها.
+3. العائد: هيرجّع إيه وإمتى: توفير، طاقة إنتاجية، سلامة، التزام.
+4. لو اتأجل: إيه اللي هيحصل لو استنينا سنة، وإيه اللي هنبطّله بداله.
+5. راجع وابعت: اقراه مرة واحدة في شاشة واحدة، وابعته لمديرك.
+Tip: مش متأكد خانة معناها إيه؟ شغّل «? فهمني» فوق، وكل خانة هتشرح نفسها في جنب الشاشة.
+## ٢ · المدير بيراجع
+الكارت يظهر عند المدير. المدير يا إما يرجّعه بملاحظة (هتشوف مرتجع للتعديل، تصلّحه وتبعته تاني)، يا إما يبعته للغرفة (مُرسل).
+## ٣ · الغرفة
+يوم العرض الكروت بتظهر واحد ورا التاني، وممكن على البروجكتور. كل واحد في الغرفة يدّي درجة من 0 لـ 3 في أربع أسئلة:
+الملاءمة مع المحرك أو محطة · الدليل ورا الأرقام · قابل للرجوع / خفيف الأصول · الاسترداد أو بوابة بيفتحها.
+المجموع من 12. 10 أو أكتر أخضر، من 6 لـ 9 أصفر، أقل من 6 برتقاني. اللون مجرد دليل، والقرار للغرفة:
+🟢 مُعتمد · 🟡 يرجع تاني (بدليل أكتر) · 🟠 ينتظر بوابة (زي بعد تجربة أو عقد).
+## ٤ · الكارت المعتمد بيدخل الميزانية
+لما الغرفة تعتمد كارت، بيظهر لوحده في ميزانية 2027 للقسم ده، في قايمة الـCAPEX، ومكتوب عليه «اتوافق عليه في الغرفة». محدش بيكتبه مرتين.
+لو الغرفة غيّرت رأيها، البند بيمشي مع الكارت. ولما المالية تقفل البند، بيفضل.
+## ٥ · بنود الـGL للسنة
+مصاريف التشغيل بتتسجّل في بنود GL: صيانة، وقود، معايرة، استشارات وهكذا. وبتدخل بطريقتين:
+1. القسم بيكتبها من الميزانية ← «بنود الـGL بتاعتنا»، وجنب كل بند رقم السنة اللي فاتت.
+2. المالية تبعت الشيت والأدمن يرفعه من «ارفع شيت المالية». الشيت بيتطابق بكود الـGL، فنفس البنود بتتحدّث مش بتتكرر: الميزانية، اللي اتصرف لحد دلوقتي (AX)، السنة اللي فاتت، الخطة الشهرية وتفاصيل الموردين.
+Tip: قبل الاستيراد، الرفع بيوريك اللي شكله غلط: بنود عدّت الميزانية، فلوس اتصرفت من غير ميزانية، وأرقام مش متفقة بين التابات.
+## ٦ · الصرف طول السنة
+سجّل المصروف على البند بتاعه أول بأول، أو اطلب فلوس مش موجودة في بند لسه. كل بند بيوريك الفاضل = الميزانية − المصروف − الموعود بيه، والخطة لحد دلوقتي بتوريك الخطة الشهرية كانت متوقعة كام لحد النهارده، فالبند اللي بيصرف أسرع من الخطة بيبان بدري.
+## صفحة الميزانية، زرار زرار
+🧮 أقدر أصرف ده؟ اختار القسم والبند، اكتب المبلغ، وتعرف على طول هو داخل في الفاضل ولا لأ. ولو داخل، ابعته كطلب.
+🧾 سجّل مصروف: اكتب الفلوس لما تطلع فعلاً، على البند بتاعها.
+📒 بنود الـGL بتاعتنا: بنود ميزانية قسمك للسنة: ضيف، عدّل، وشوف السنة اللي فاتت جنب كل بند.
+📤 ارفع شيت المالية (للأدمن): الرفع الوحيد اللي غالباً هتحتاجه. ملف المالية بيملا الميزانيات، المصروف لحد دلوقتي، السنة اللي فاتت، الخطة الشهرية وقايمة الـCAPEX.
+طرق تانية لإدخال البيانات (للأدمن، نادراً): شيت عادي ببنود الميزانية، أو ملف مصروف من AX. 📥 شيت فاضي بينزّل ملف فاضي بالأعمدة الصح، عشان تعرف تملا إيه.
+Tip: 📤 يعني ترفع ملف على smartBudget. 📥 يعني تنزّل ملف على جهازك.
+## الدخول
+أول مرة هيجيلك إيميل من noreply@smartbudget.devoneerstechnology.ai فيه لينك دخول. الإيميل آمن: بيفتح smartBudget بس، واتبعت لأن حد في المنار دعاك أو إنت طلبته.
+هتفضل داخل على المتصفح ده. ولو مش عايز الإيميل كل مرة، دوس 🔑 فوق مرة واحدة واعمل باسورد.
+## أسئلة بتتسأل
+Q: ليه أربط الكارت ببند GL؟
+A: عشان الغرفة تعرف الطلب ده جوّه بند شغّال أصلاً، ولا محتاج فلوس جديدة. اختار «ولا ده ولا ده» لو مفيش بند مناسب.
+Q: إحنا كتبنا بنودنا. لما شيت المالية ييجي إيه اللي هيحصل؟
+A: نفس البنود بتتحدّث بكود الـGL، حتى لو كتبت الكود من غير مركز التكلفة. محدش بيدخّل حاجة مرتين.
+Q: أقدر أعدّل الكارت بعد ما بعته؟
+A: طول ما هو عند المدير، اطلب منه يرجّعهولك. ولو الغرفة قالت «يرجع تاني»، تقدر تعدّله وتبعته تاني. كل تعديل بيتحفظ في تاريخ الكارت.
+Q: مين بيشوف كروتي؟
+A: قسمك، ومديرك، والأدمن. والغرفة بتشوف الكارت بس بعد ما يتبعت للغرفة، والمسودات لأ.
+# Every field and button (ar)
+- وضع "فهمني" شغّال: المس أو اضغط أو ادخل على أي خانة أو زرار عليه خط منقّط، وشرحه هيظهر هنا. كل حاجة بتشتغل عادي وإنت في الوضع ده. How: اقفله من نفس زرار "؟ فهمني" اللي فوق.
+- الدليل: صفحة واحدة بتمشي معاك الرحلة كلها: كتابة الكارت، المدير، الغرفة، إزاي الكارت المعتمد بيدخل الميزانية، بنود الـGL، شيت المالية والدخول. How: افتحها في أي وقت. بتشتغل من غير دخول كمان، فتقدر تبعت اللينك لأي حد جديد: smartbudget.devoneerstechnology.ai/#guide
+- اللغة: بيقلب المنصة كلها عربي أو إنجليزي. الكروت زي ما هي، اللي بيتغير الكلام بس. How: دوسة واحدة، واختيارك بيتحفظ على المتصفح ده.
+- الكروت: كل كارت طلب واحد لميزانية 2027: ماكينة، مشروع، إصلاح. رئيس القسم يكتب، والمدير يراجع ويبعت للجنة. How: دوس "+ كارت جديد"، أو افتح كارت موجود وكمّل.
+- اللجنة: المكان اللي اللجنة بتشوف فيه كل كارت على البروجكتور وتديله درجة من 0 لـ3 في كل سؤال. How: استخدم الأسهم للتنقل، ووضع البروجكتور بيكبّر كل حاجة.
+- الميزانية (طول السنة): ميزانيتك لايف: كل قسم عنده كام، صرف كام، متوعد بكام، وفاضله كام. مش لميزانية 2027 بس، معاك طول السنة. How: اختار السنة من فوق، وافتح القسم تشوف بنوده.
+- المخرجات: إكسل المالية: كل كارت بالـCAPEX والتكلفة السنوية والربط، جاهز يتبعت. How: دوس "نزّل إكسل".
+- الناس: مين بيستخدم المنصة ودوره: رئيس قسم، مدير، لجنة، أدمن. How: ضيف الشخص وابعتله لينك الدخول.
+- كارت جديد: بيفتح كارت فاضي. بيتحفظ لوحده كمسودة وإنت بتكتب، فلو حد ندهلك مفيش حاجة هتضيع. How: اكتب العنوان في سطر الأول، والباقي بعدين.
+- الخمس خطوات: الكارت متقسم خمس صفحات قصيرة: الهدف، الفلوس، العائد، لو اتأجل، والمراجعة. علامة ✓ يعني الخطوة كاملة. How: دوس على أي خطوة تروحلها. مفيش حاجة بتتبعت غير من آخر خطوة.
+- العنوان: سطر واحد يفهّم أي حد ده إيه. العنوان الكويس بيسمّي الحاجة نفسها مش المشكلة. How: مثال: "فوركليفت كهربائي بقلّاب براميل، مبنى ٢".
+- القسم: القسم صاحب الكارت. ده اللي بيحدد بنود الميزانية والمدير اللي هيشوفه. How: اختار القسم الأول، لأن بنود الـGL اللي تحت معتمدة عليه.
+- الهدف بكلامك: الكارت ده بيخدم إيه: سلامة، التزام قانوني، إحلال ماكينة قديمة، نمو، فكرة جديدة. أي هدف ينفع، مفيش إجابة غلط. How: جملة أو اتنين بسيطين. ولو احتياج جديد، قول ليه دلوقتي.
+- اربطه بفكرة إكسكوم (اختياري): الإكسكوم عنده قايمة أفكار مجمّعة للشركة. لو الكارت بيخدم واحدة منهم، الربط بيوري اللجنة إنه ماشي مع الاستراتيجية. How: دوس واختار الفكرة. والمنصة بتقترح لوحدها لو كلامك قريب من فكرة.
+- اربطه ببند GL: بند الـGL ده بند ميزانية موجود عند قسمك (زي صيانة الماكينات). الربط بيبيّن هل ده متغطي جوه الميزانية ولا فلوس جديدة. How: اختار القسم الأول، وبعدين البند. هتشوف ميزانيته والفاضل منه.
+- لا ده ولا ده: احتياج جديد: استخدمه لما الكارت مش فكرة إكسكوم ومش جوه بند ميزانية حالي. ده عادي جدًا، وأفكار كتير كويسة بتبدأ كده. How: دوس عليه، واكتب في خانة الهدف ليه محتاجينه دلوقتي.
+- إيه بالظبط، وهتعمل بيه إيه؟: التفاصيل: هتشتري أو تعمل إيه، فين، وهيتستخدم إزاي كل يوم. How: اكتب كأنك بتشرح لحد عمره ما زار المصنع.
+- حجم الـCAPEX: خفيف ولا كبير. الطلبات الكبيرة بتاخد مراجعة أعمق في اللجنة. How: لو مش متأكد اختار خفيف، والمدير يقدر يغيّره.
+- مبلغ الـCAPEX (جنيه): تكلفة الشراء أو البناء مرة واحدة. الكلام اللي تحت الخانة ("≈ 1.25 مليون جنيه") بيكشف لو صفر ناقص. How: اكتب الرقم والفواصل بتتحط لوحدها. الأرقام العربي شغالة كمان.
+- إمتى: الربع اللي محتاج فيه الفلوس. بيساعد المالية تخطط السيولة. How: اختار الربع اللي هتطلب فيه.
+- مستني عرض سعر: علّم هنا لو لسه معندكش سعر وعرض المورد هو اللي هيحدد. How: ارفع العرض لما يوصل.
+- عرض سعر أو صورة: أي عرض سعر أو صورة أو رسمة تساعد اللجنة تفهم الطلب. How: PDF أو صورة، وتقدر ترفع أكتر من واحد.
+- التكلفة كل سنة: الحاجة دي هتكلف كام كل سنة بعد ما تتشتري: ناس، تدريب، مستهلكات، صيانة، تراخيص. اللجنة تشوف التكلفة الحقيقية مش السعر بس. How: دوس على نوع التكلفة (أفراد، تدريب، أدوات…). كل نوع بيفتح خاناته وبيحسب الرقم السنوي. طلب التعيين ممكن يكون الـCAPEX بتاعه صفر.
+- ملاحظات على التكلفة السنوية: أي حاجة بتشرح الأرقام السنوية. How: اختياري.
+- العائد: إيه اللي هيتحسن، بالأرقام لو تقدر: ساعات أقل، أطنان أكتر، حوادث أقل، فلوس متوفرة. How: فايدة واحدة واضحة أحسن من خمسة مش واضحين.
+- العائد يبدأ إمتى: بعد ما توصل بقد إيه الفايدة تبان. How: مثال: "خلال ٣ شهور من التركيب".
+- هنقيسه إزاي: الرقم اللي هتراجعه بعدين تثبت إنه نفع. How: اختار حاجة متسجلة أصلًا، زي ساعات التوقف أو الإنتاج في الوردية.
+- هنقيس إمتى: إمتى المراجعة. How: مثال: "مراجعة Q3 2027".
+- لو اتأجل: إيه اللي هيحصل لو الرد لأ: الخطر، تمن الاستنى، البديل المؤقت. How: خليك صريح، ده بيساعد اللجنة تقارن بالعدل.
+- هنبطّل إيه: أي حاجة الكارت ده بيحل محلها أو بيلغيها، وممكن توفر فلوس في حتة تانية. How: اختياري.
+- ابعت: رئيس القسم بيبعت للمدير. المدير بيبعت للجنة أو يرجّعه بملاحظة. How: راجع الملخص اللي فوق الأول؛ الناقص متلستّ وجنبه زرار يوديك.
+- احفظ: بيحفظ الكارت دلوقتي. والمسودة كمان بتتحفظ لوحدها بعد ما تقف عن الكتابة بلحظة. How: آخر وقت حفظ ظاهر فوق.
+- السنة: سنة الميزانية اللي بتبص عليها. 2025 موجودة للمقارنة. How: اختار السنة، والصفحة كلها بتمشي وراها.
+- أقدر أصرف ده؟: إجابة فورية قبل ما تصرف: الفلوس تكفي في البند أو القسم؟ وهيفضل كام بعدها؟ How: اكتب ده لإيه، والمبلغ، واقرا الإجابة. ابعته كطلب لو عايز موافقة.
+- سجّل مصروف: سجّل الفلوس وهي بتتصرف، على دفعات، عشان "الفاضل" يبقى صح النهارده مش لما المالية تقفل الشهر. والـAX بيراجعه بعدين. How: اختار البند أو الطلب الموافق عليه، واكتب المبلغ والتاريخ.
+- بنود الـGL بتاعتنا: بنود ميزانية قسمك، إنت اللي بتكتبها. رقم السنة اللي فاتت جنب كل بند، فالتغيير الكبير سهل يتشرح. How: اختار أو اكتب كود الـGL، واسمه، والميزانية، وضيف.
+- الميزانية · اتصرف · متوعد بيه · فاضل: الميزانية اللي معاك. اتصرف هو اللي في الـAX أو في تسجيلاتك (الأعلى فيهم). متوعد بيه الطلبات المستنية أو الموافق عليها. فاضل هو الحر فعلًا. How: افتح "البنود والطلبات" تشوف كل بند.
+- البنود والطلبات: كل بند بالسنة اللي فاتت، والمخطط لحد دلوقتي، واللي اتصرف، والفاضل. العلامات الحمرا يعني عدّى الميزانية أو اتصرف من غير ميزانية. 📋 بيفتح تفصيل الموردين. How: دوس على التفصيل تشوف الفلوس رايحة فين.
+- طرق تانية لإدخال البيانات: رفعتين أبسط وأقدم: شيت عادي فيه بنود الميزانية، وملف مصروف من AX. لكل واحد شيت فاضي تنزّله عشان تشوف الأعمدة. How: نادراً ما هتحتاجهم. شيت المالية بيغطي الاتنين.
+- ارفع شيت المالية: بياخد شيتات المالية زي ما بيبعتوها بالظبط (ميزانية مقابل فعلي، خطة شهرية، قائمة CAPEX، تفصيل الموردين). كل التابات بتتقري. How: اختار الملف، وصّل كل Budget owner بقسمه، حط تاريخ "لحد يوم"، واستورد.
+- طلبات مستنياك: طلبات صرف من أقسامك، وجنب كل واحد هل تكفيه الفلوس الفاضلة. How: وافق، أو ارفض بسبب قصير.
