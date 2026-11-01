@@ -176,7 +176,7 @@ function Main({ t, lang, setLang, profile }) {
     ...(inRoom ? [{ id: 'room', label: t('nav_room') }] : []),
     { id: 'budget', label: t('nav_budget') },
     ...(isStaff ? [{ id: 'out', label: t('nav_outputs') }] : []),
-    ...(profile.role === 'admin' ? [{ id: 'people', label: t('nav_people') }] : []),
+    ...(profile.role === 'admin' ? [{ id: 'people', label: t('nav_people') }, { id: 'ideas', label: t('nav_ideas') }] : []),
   ]
   const [tab, setTab] = useState(tabs[0].id)
   const [ref, setRef] = useState({ departments: [], directorates: [], register: [], cycle: null })
@@ -200,6 +200,7 @@ function Main({ t, lang, setLang, profile }) {
       {tab === 'budget' && <Budget t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'out' && ref.cycle && <Outputs t={t} lang={lang} profile={profile} refd={ref} />}
       {tab === 'people' && <People t={t} lang={lang} refd={ref} show={show} />}
+      {tab === 'ideas' && <Ideas t={t} lang={lang} refd={ref} />}
     </div>
     {toast && <div className="toast">{toast}</div>}
   </Shell>
@@ -1001,6 +1002,29 @@ function Outputs({ t, lang, refd }) {
 }
 
 /* ---------------- PEOPLE ---------------- */
+// PlanTee's inbox: what people told BudguTee (ideas, missing things, problems)
+function Ideas({ t, lang, refd }) {
+  const [list, setList] = useState(null), [f, setF] = useState('open')
+  const load = () => supabase.from('suggestions').select('*').order('created_at', { ascending: false }).then(({ data }) => setList(data || []))
+  useEffect(() => { load() }, [])
+  const mark = async (id, status) => { await supabase.from('suggestions').update({ status }).eq('id', id); load() }
+  const dep = (id) => { const d = refd.departments.find(x => x.id === id); return d ? d[lang === 'ar' ? 'name_ar' : 'name_en'] : '' }
+  const icon = { idea: '💡', missing: '🧩', problem: '⚠️' }
+  const shown = (list || []).filter(x => f === 'all' || x.status !== 'done')
+  return <>
+    <div className="hero"><p className="k">smartBudget</p><h2>📬 {t('ideas_title')}</h2><p>{t('ideas_lead')}</p>
+      <div className="seg wide">{['open', 'all'].map(k => <button key={k} className={f === k ? 'on' : ''} onClick={() => setF(k)}>{t('ideas_' + k)}</button>)}</div></div>
+    {list && !shown.length && <div className="card center"><p className="m">{t('ideas_empty')}</p></div>}
+    {shown.map(x => <div key={x.id} className={'card idea ' + x.status}>
+      <div className="idea-h"><span className="idea-k">{icon[x.kind] || '💡'} {t('sug_' + x.kind)}</span><span className={'pill ' + (x.status === 'done' ? 'green' : x.status === 'seen' ? 'draft' : 'yellow')}>{t('ideas_' + x.status)}</span><span className="sp" />
+        <small>{x.name || '—'}{x.department_id ? ' · ' + dep(x.department_id) : ''} · {new Date(x.created_at).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en-GB', { dateStyle: 'medium', timeStyle: 'short' })}{x.via === 'chat' ? ' · ' + t('ideas_chat') : ''}</small></div>
+      <p className="idea-b" dir="auto">{x.body}</p>
+      <div className="btns">{x.status === 'new' && <button className="btn sm" onClick={() => mark(x.id, 'seen')}>{t('ideas_mark_seen')}</button>}
+        {x.status !== 'done' ? <button className="btn g sm" onClick={() => mark(x.id, 'done')}>{t('ideas_mark_done')}</button> : <button className="btn ghost sm" onClick={() => mark(x.id, 'new')}>{t('ideas_reopen')}</button>}</div>
+    </div>)}
+  </>
+}
+
 function People({ t, lang, refd, show }) {
   const empty = { email: '', name: '', role: 'head', department_id: null, directorate_id: null, in_room: false }
   const [list, setList] = useState([]); const [n, setN] = useState(empty); const [busy, setBusy] = useState(false)

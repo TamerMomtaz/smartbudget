@@ -83,6 +83,32 @@ function useRoam(on) {
   return { pos, face, peek, hold }
 }
 
+// PlanTee's truck: BudguTee writes the note, runs to an Al Manar truck, and the truck drives it to PlanTee
+export function Delivery({ t, onDone }) {
+  useEffect(() => { const id = setTimeout(onDone, calm() ? 1800 : 5600); return () => clearTimeout(id) }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  return <div className="dv" aria-live="polite">
+    <div className="dv-road" />
+    <div className="dv-truck"><svg width="170" height="92" viewBox="0 0 170 92" aria-hidden="true">
+      <rect x="4" y="14" width="104" height="54" rx="5" fill="#F16C20" stroke="#0B3550" strokeWidth="2.5" />
+      <rect x="4" y="14" width="104" height="10" rx="4" fill="#E2A93B" opacity=".9" />
+      <text x="56" y="49" textAnchor="middle" fontSize="15" fontWeight="800" fill="#fff" fontFamily="inherit">AL MANAR</text>
+      <text x="56" y="62" textAnchor="middle" fontSize="9.5" fontWeight="700" fill="#FFF0BE" fontFamily="inherit">→ PlanTee</text>
+      <path d="M110 30 H140 L160 50 V68 H110 Z" fill="#0B3550" stroke="#06223A" strokeWidth="2" strokeLinejoin="round" />
+      <path d="M116 35 H137 L151 50 H116 Z" fill="#BFE3F5" />
+      <circle cx="157" cy="60" r="3" fill="#FFE08A" />
+      <g className="dv-wheel"><circle cx="34" cy="72" r="11" fill="#1C1C1C" /><circle cx="34" cy="72" r="4" fill="#9AA9B5" /><rect x="33" y="62" width="2" height="20" fill="#555" /></g>
+      <g className="dv-wheel w2"><circle cx="134" cy="72" r="11" fill="#1C1C1C" /><circle cx="134" cy="72" r="4" fill="#9AA9B5" /><rect x="133" y="62" width="2" height="20" fill="#555" /></g>
+    </svg><span className="dv-puff" /><span className="dv-puff p2" /></div>
+    <div className="dv-runner"><span className="dv-paper">📝</span><OilDrop state="talk" size={70} /><span className="dv-pen">✒️</span></div>
+    <div className="dv-msg">{t('sug_onway')}</div>
+  </div>
+}
+const MARK = '@@PLANTEE:'
+async function deliver(profile, body, kind, screen, via) {
+  const { error } = await supabase.from('suggestions').insert({ name: profile?.name || null, department_id: profile?.department_id || null, kind, body: body.slice(0, 2000), screen, via })
+  return !error
+}
+
 export default function Budgootee({ t, lang, profile, screen }) {
   const [open, setOpen] = useState(false), [msgs, setMsgs] = useState([]), [q, setQ] = useState(''), [busy, setBusy] = useState(false)
   const [talking, setTalking] = useState(false), [listening, setListening] = useState(false), [note, setNote] = useState('')
@@ -90,7 +116,7 @@ export default function Budgootee({ t, lang, profile, screen }) {
   const end = useRef(null), input = useRef(null), rec = useRef(null)
   const { pos, face, peek, hold } = useRoam(roamOn && !open)
   // he only shows up once his function is live and has a key
-  const [ready, setReady] = useState(false)
+  const [ready, setReady] = useState(false), [sug, setSug] = useState(null), [truck, setTruck] = useState(false)
   useEffect(() => { fetch(URL_FN, { headers: { apikey: import.meta.env.VITE_SUPABASE_KEY } }).then(r => r.ok ? r.json() : null).then(j => setReady(!!j?.ready)).catch(() => {}) }, [])
   useEffect(() => { end.current?.scrollIntoView({ block: 'end' }) }, [msgs, open])
   useEffect(() => { if (open) setTimeout(() => input.current?.focus(), 150); else { window.speechSynthesis?.cancel(); rec.current?.abort?.() } }, [open])
@@ -100,7 +126,7 @@ export default function Budgootee({ t, lang, profile, screen }) {
     text = (text || '').trim(); if (!text || busy) return
     window.speechSynthesis?.cancel(); setNote('')
     const next = [...msgs, { role: 'user', content: text }]; setMsgs([...next, { role: 'assistant', content: '' }]); setQ(''); setBusy(true)
-    const put = (s) => setMsgs(m => { const c = [...m]; c[c.length - 1] = { role: 'assistant', content: s }; return c })
+    const put = (s) => setMsgs(m => { const c = [...m]; c[c.length - 1] = { role: 'assistant', content: s.split('@@')[0].trimEnd() }; return c })
     let s = ''
     try {
       const { data: { session } } = await supabase.auth.getSession()
@@ -110,8 +136,25 @@ export default function Budgootee({ t, lang, profile, screen }) {
       const rd = r.body.getReader(), dec = new TextDecoder()
       for (;;) { const { done, value } = await rd.read(); if (done) break; s += dec.decode(value, { stream: true }); put(s) }
       if (!s) put(t('bot_err'))
-    } catch { put(t('bot_wait')) } finally { setBusy(false); if (s && (voiceOn || byVoice)) say(s) }
+    } catch { put(t('bot_wait')) } finally {
+      setBusy(false)
+      // he heard a suggestion or a missing thing: the note goes on the truck to PlanTee
+      const at = s.indexOf(MARK), shown = s.split('@@')[0].trim()
+      if (at >= 0) { const line = s.slice(at + MARK.length).trim() || text; if (await deliver(profile, line + '\n\n— ' + text, 'idea', screen, 'chat')) setTruck(true); else setNote(t('sug_fail')) }
+      if (shown && (voiceOn || byVoice)) say(shown)
+    }
   }
+  // the suggestion box: no AI needed, he just writes it down and runs
+  const send = async (text, byVoice) => {
+    text = (text || '').trim(); if (!text || busy) return
+    setNote(''); setQ(''); setBusy(true)
+    const ok = await deliver(profile, text, sug, screen, 'form'); setBusy(false)
+    const reply = ok ? t('sug_thanks') : t('sug_fail')
+    setMsgs(m => [...m, { role: 'user', content: '💡 ' + text }, { role: 'assistant', content: reply }]); setSug(null)
+    if (ok) setTruck(true)
+    if (voiceOn || byVoice) say(reply)
+  }
+  const submit = (text, byVoice) => sug ? send(text, byVoice) : ask(text, byVoice)
 
   // talking to him: the browser's own speech recognition (Chrome, Edge, Safari). Brave and Firefox block it.
   const listen = () => {
@@ -123,7 +166,7 @@ export default function Budgootee({ t, lang, profile, screen }) {
     let heard = ''
     r.onresult = (e) => { heard = Array.from(e.results).map(x => x[0].transcript).join(' '); setQ(heard) }
     r.onerror = (e) => { setNote(t(e.error === 'not-allowed' || e.error === 'service-not-allowed' ? (navigator.brave ? 'bot_mic_no' : 'bot_mic_block') : e.error === 'no-speech' ? 'bot_mic_none' : 'bot_mic_no')) }
-    r.onend = () => { setListening(false); if (heard.trim()) ask(heard, true) }
+    r.onend = () => { setListening(false); if (heard.trim()) submit(heard, true) }
     try { r.start(); setListening(true) } catch { setNote(t('bot_mic_no')) }
   }
 
@@ -145,15 +188,20 @@ export default function Budgootee({ t, lang, profile, screen }) {
       <div className="bgt-b">
         <div className="bgt-m a">{t('bot_hi')}</div>
         {msgs.length === 0 && <div className="bgt-chips">{['bot_s1', 'bot_s2', 'bot_s3'].map(k => <button key={k} onClick={() => ask(t(k))}>{t(k)}</button>)}</div>}
+        {!sug && !busy && <div className="bgt-chips"><button className="sug" onClick={() => { setSug('idea'); setTimeout(() => input.current?.focus(), 50) }}>💡 {t('sug_chip')}</button></div>}
         {msgs.map((m, i) => <div key={i} className={'bgt-m ' + (m.role === 'user' ? 'u' : 'a')} dir="auto">{m.content || <span className="bgt-dots"><i /><i /><i /></span>}
           {m.role === 'assistant' && m.content && !busy && <button className="bgt-say" title={t('bot_say')} onClick={() => say(m.content)}>🔊</button>}</div>)}
         <div ref={end} />
       </div>
       {note && <div className="bgt-note" dir="auto">{note}</div>}
-      <form className="bgt-f" onSubmit={e => { e.preventDefault(); ask(q) }}>
+      {sug && <div className="bgt-sug"><b>💡 {t('sug_title')}</b>
+        <div className="seg">{['idea', 'missing', 'problem'].map(k => <button key={k} type="button" className={sug === k ? 'on' : ''} onClick={() => setSug(k)}>{t('sug_' + k)}</button>)}</div>
+        <button type="button" className="x" onClick={() => setSug(null)} aria-label="close">✕</button></div>}
+      <form className="bgt-f" onSubmit={e => { e.preventDefault(); submit(q) }}>
         <button type="button" className={'bgt-mic' + (listening ? ' on' : '')} onClick={listen} title={t('bot_mic')} aria-label={t('bot_mic')} aria-pressed={listening}>{listening ? '■' : '🎙️'}</button>
-        <input ref={input} value={q} dir="auto" maxLength={600} placeholder={listening ? t('bot_listen') : t('bot_ph')} onChange={e => setQ(e.target.value)} />
-        <button className="btn p" disabled={busy || !q.trim()}>{t('bot_send')}</button></form>
+        <input ref={input} value={q} dir="auto" maxLength={600} placeholder={listening ? t('bot_listen') : sug ? t('sug_ph') : t('bot_ph')} onChange={e => setQ(e.target.value)} />
+        <button className="btn p" disabled={busy || !q.trim()}>{sug ? t('sug_send') : t('bot_send')}</button></form>
     </div>}
+    {truck && <Delivery t={t} onDone={() => setTruck(false)} />}
   </>
 }
