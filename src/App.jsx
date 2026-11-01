@@ -1013,7 +1013,7 @@ function People({ t, lang, refd, show }) {
         <td>{roles(p.role, v => upd(p, { role: v }))}</td>
         <td>{place(p, patch => upd(p, patch))}</td>
         <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!p.in_room} onChange={e => upd(p, { in_room: e.target.checked })} /></td>
-        <td style={{ whiteSpace: 'nowrap' }}>{p.last_seen_at ? <span className="pill green">✓ {t('signed_in')}</span> : <button className="btn" disabled={!!busy} onClick={() => one(p)}>{busy === p.id ? '…' : '✉'} {p.invited_at ? t('reinvite') : t('invite')}</button>}</td></tr>)}
+        <td style={{ whiteSpace: 'nowrap' }}>{p.last_seen_at ? <span className="pill green">✓ {t('signed_in')}</span> : <button className="btn" disabled={busy === p.id || busy === true} onClick={() => { if (!busy) one(p) }}>{busy === p.id ? '…' : '✉'} {p.invited_at ? t('reinvite') : t('invite')}</button>}</td></tr>)}
     </tbody></table></div>
   </>
 }
