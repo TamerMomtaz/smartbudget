@@ -4,6 +4,7 @@ import { t as T, fmt, approx } from './i18n'
 import * as XLSX from 'xlsx'
 import { readWorkbook, notice, planToDate } from './finance'
 import { HELP } from './help'
+import { chime, soundOn, setSound } from './cinema'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
 const OPEX = ['opex_people', 'opex_training', 'opex_consumables', 'opex_maintenance', 'opex_licences', 'opex_other']
@@ -83,14 +84,32 @@ function Login({ t, lang, setLang }) {
     const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: window.location.origin } })
     setBusy(false); if (error) setErr(error.message); else setSent(true)
   }
+  // the opening: a lighthouse beam sweeps across the Al Manar mark, once per visit (skipped for people who turn motion off)
+  const calm = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
+  const [intro, setIntro] = useState(() => { try { return !calm && !sessionStorage.getItem('sb_intro') } catch { return !calm } })
+  const [sound, setSnd] = useState(soundOn())
+  useEffect(() => { if (!intro) return; const id = setTimeout(() => endIntro(), 3400); return () => clearTimeout(id) }, [intro]) // eslint-disable-line react-hooks/exhaustive-deps
+  const endIntro = () => { setIntro(false); try { sessionStorage.setItem('sb_intro', '1') } catch { /* private mode */ } }
+  // sound is never automatic: it plays on the visitor's first click if they turned it on before
+  useEffect(() => { if (!sound) return; const once = () => chime(); window.addEventListener('pointerdown', once, { once: true }); return () => window.removeEventListener('pointerdown', once) }, [sound])
+  const toggleSound = () => { const v = !sound; setSnd(v); setSound(v); if (v) chime() }
   return <Shell t={t} lang={lang} setLang={setLang}>
+    {intro && <div className="stage" onClick={endIntro}>
+      <div className="beam" /><div className="mark"><img src="/mark.png" alt="" /></div>
+      <div className="title">smart<span>Budget</span></div><div className="sub">{t('tagline')}</div>
+      <div className="stage-btns"><button className="btn glass" onClick={e => { e.stopPropagation(); if (!sound) { setSnd(true); setSound(true) } chime() }}>🔊 {t('land_sound')}</button><button className="btn glass" onClick={endIntro}>{t('land_skip')} ›</button></div>
+    </div>}
     <div className="landing">
-      <div className="hero land"><p className="k">{t('land_kicker')}</p><h1>{t('land_title')}</h1><p className="lead">{t('land_lead')}</p>
-        <div className="feats">{[['🧭', 'land_f1'], ['💰', 'land_f2'], ['🗳️', 'land_f3'], ['💡', 'land_f4']].map(([i, k]) => <div key={k} className="feat"><span>{i}</span><b>{t(k + '_t')}</b><p>{t(k)}</p></div>)}</div></div>
+      <div className="hero land">
+        <div className="land-mark" aria-hidden="true"><div className="beam slow" /><img src="/mark.png" alt="" /></div>
+        <p className="k rise" style={{ '--d': '0s' }}>{t('land_kicker')}</p><h1 className="rise" style={{ '--d': '.1s' }}>{t('land_title')}</h1><p className="lead rise" style={{ '--d': '.2s' }}>{t('land_lead')}</p>
+        <div className="btns rise" style={{ '--d': '.3s', marginTop: 0, marginBottom: 18 }}><button className="btn p" onClick={() => { const el = document.querySelector('.login input[type=email]'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el?.focus(), 400) }}>{t('login_title')} {lang === 'ar' ? '←' : '→'}</button></div>
+        <button className="btn glass snd" aria-pressed={sound} title={t('land_sound')} onClick={toggleSound}>{sound ? '🔊' : '🔈'}</button>
+        <div className="feats">{[['🧭', 'land_f1'], ['💰', 'land_f2'], ['🗳️', 'land_f3'], ['💡', 'land_f4']].map(([i, k], n) => <div key={k} className="feat rise" style={{ '--d': (0.35 + n * 0.12) + 's' }}><span>{i}</span><b>{t(k + '_t')}</b><p>{t(k)}</p></div>)}</div></div>
     </div>
     <div className="wrap login">
-      <div className="card center">
-        <img src="/logo.png" alt="Al Manar" />
+      <div className="card center rise" style={{ '--d': '.8s' }}>
+        <img src="/logo.png" alt="Al Manar Group" />
         <h1>{t('login_title')}</h1>
         {sent ? <p className="m">{t('link_sent')}</p> : <form onSubmit={go}>
           <p className="m">{t('login_hint')}</p>
