@@ -128,7 +128,7 @@ function Login({ t, lang, setLang, preview, onBack }) {
     const { error } = await supabase.auth.signInWithOtp({ email: email.trim(), options: { emailRedirectTo: window.location.origin } })
     setBusy(false); if (error) setErr(error.message); else setSent(true)
   }
-  // the opening: a lighthouse beam sweeps across the Al Manar mark, once per visit (skipped for people who turn motion off)
+  // the opening: a golden drop of oil falls onto the Al Manar mark and ripples out, once per visit (skipped for people who turn motion off)
   const calm = typeof matchMedia !== 'undefined' && matchMedia('(prefers-reduced-motion: reduce)').matches
   const [intro, setIntro] = useState(() => { try { return !calm && !sessionStorage.getItem('sb_intro') } catch { return !calm } })
   const [sound, setSnd] = useState(soundOn())
@@ -139,13 +139,13 @@ function Login({ t, lang, setLang, preview, onBack }) {
   const toggleSound = () => { const v = !sound; setSnd(v); setSound(v); if (v) chime() }
   return <Shell t={t} lang={lang} setLang={setLang}>
     {intro && <div className="stage" onClick={endIntro}>
-      <div className="beam" /><div className="mark"><img src="/mark.png" alt="" /></div>
+      <div className="gold" /><div className="ripple" /><div className="ripple r2" /><div className="ripple r3" /><div className="drop" /><div className="mark"><img src="/mark.png" alt="" /></div>
       <div className="title">smart<span>Budget</span></div><div className="sub">{t('tagline')}</div>
       <div className="stage-btns"><button className="btn glass" onClick={e => { e.stopPropagation(); if (!sound) { setSnd(true); setSound(true) } chime() }}>🔊 {t('land_sound')}</button><button className="btn glass" onClick={endIntro}>{t('land_skip')} ›</button></div>
     </div>}
     <div className="landing">
       <div className="hero land">
-        <div className="land-mark" aria-hidden="true"><div className="beam slow" /><img src="/mark.png" alt="" /></div>
+        <div className="land-mark" aria-hidden="true"><div className="ripple" /><div className="ripple r2" /><div className="ripple r3" /><img src="/mark.png" alt="" /></div>
         <p className="k rise" style={{ '--d': '0s' }}>{t('land_kicker')}</p><h1 className="rise" style={{ '--d': '.1s' }}>{t('land_title')}</h1><p className="lead rise" style={{ '--d': '.2s' }}>{t('land_lead')}</p>
         <div className="btns rise" style={{ '--d': '.3s', marginTop: 0, marginBottom: 18 }}><button className="btn p" onClick={() => { if (preview) { onBack(); return } const el = document.querySelector('.login input[type=email]'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el?.focus(), 400) }}>{preview ? t('back_app') : t('login_title')} {lang === 'ar' ? '←' : '→'}</button><a className="btn glass" href="#guide">📖 {t('land_guide')}</a></div>
         <button className="btn glass snd" aria-pressed={sound} title={t('land_sound')} onClick={toggleSound}>{sound ? '🔊' : '🔈'}</button>

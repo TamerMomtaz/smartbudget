@@ -193,7 +193,7 @@ body.explain .tabs [data-help]{outline-offset:-4px}
 .wrap.wide{max-width:1280px}
 .tb.people td{vertical-align:middle}.tb.people input[type=text]{min-width:170px}.tb.people select{min-width:150px}
 @media (max-width:700px){.hero.land h1{font-size:26px}.hero.land{padding:22px 18px}}
-/* ===== landing, cinematic (2026-11-01): Al Manar = the lighthouse, so a beam of light sweeps the mark ===== */
+/* ===== landing, cinematic: a golden drop of oil falls onto the mark and ripples out ===== */
 @keyframes sweep{from{transform:translate(-50%,-50%) rotate(-140deg)}to{transform:translate(-50%,-50%) rotate(220deg)}}
 @keyframes rise{from{opacity:0;transform:translateY(18px);filter:blur(4px)}to{opacity:1;transform:none;filter:none}}
 @keyframes glow{0%,100%{filter:drop-shadow(0 0 10px rgba(226,169,59,.35))}50%{filter:drop-shadow(0 0 26px rgba(255,214,140,.75))}}
@@ -201,9 +201,16 @@ body.explain .tabs [data-help]{outline-offset:-4px}
 @keyframes ink{from{clip-path:inset(0 100% 0 0)}to{clip-path:inset(0 0 0 0)}}
 .stage{position:fixed;inset:0;z-index:50;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;overflow:hidden;cursor:pointer;
   background:radial-gradient(900px 600px at 50% 45%,#123F5C 0%,#082638 55%,#03121D 100%);animation:stageOut 6.2s ease-in forwards}
-.stage .beam{position:absolute;left:50%;top:44%;width:260vmax;height:260vmax;transform:translate(-50%,-50%);
-  background:conic-gradient(from 0deg,transparent 0deg,rgba(255,225,160,.0) 330deg,rgba(255,225,160,.32) 350deg,rgba(255,245,215,.55) 356deg,transparent 360deg);animation:sweep 5.4s cubic-bezier(.45,.05,.3,1) forwards;pointer-events:none}
-.stage .mark{position:relative;width:120px;height:136px;display:grid;place-items:center;animation:rise 1.4s .2s both,glow 2.6s 1.4s ease-in-out infinite}
+.stage .drop{position:absolute;left:50%;top:44%;width:34px;height:46px;margin:-23px 0 0 -17px;border-radius:50% 50% 50% 50%/60% 60% 40% 40%;
+  background:radial-gradient(circle at 35% 30%,#FFF6D6 0 12%,#F2BE4E 45%,#B87A0E 100%);box-shadow:0 0 30px rgba(255,214,120,.8);animation:dropFall 1.1s cubic-bezier(.55,0,1,.45) both}
+.stage .drop::before{content:"";position:absolute;left:50%;top:-14px;margin-left:-9px;border:9px solid transparent;border-top:0;border-bottom:16px solid #F7CB67}
+.stage .ripple{position:absolute;left:50%;top:44%;width:120px;height:120px;margin:-60px 0 0 -60px;border-radius:50%;border:2px solid rgba(255,214,120,.75);opacity:0;animation:ripple 2.6s 1.05s ease-out both;pointer-events:none}
+.stage .ripple.r2{animation-delay:1.35s}.stage .ripple.r3{animation-delay:1.7s}
+.stage .gold{position:absolute;left:50%;top:44%;width:180vmax;height:180vmax;margin:-90vmax 0 0 -90vmax;border-radius:50%;background:radial-gradient(circle,rgba(242,190,78,.28) 0,rgba(242,190,78,.08) 25%,transparent 55%);opacity:0;animation:goldWash 3.4s 1.05s ease-out both;pointer-events:none}
+@keyframes dropFall{0%{transform:translateY(-60vh) scale(.8);opacity:0}15%{opacity:1}88%{transform:translateY(0) scale(1,1.1)}100%{transform:translateY(6px) scale(1.6,.3);opacity:0}}
+@keyframes ripple{0%{transform:scale(.2);opacity:0}6%{opacity:.9}100%{transform:scale(6);opacity:0}}
+@keyframes goldWash{0%{opacity:0;transform:scale(.3)}40%{opacity:1}100%{opacity:.5;transform:scale(1)}}
+.stage .mark{position:relative;width:120px;height:136px;display:grid;place-items:center;animation:rise 1.2s 1.1s both,glow 2.6s 1.4s ease-in-out infinite}
 .stage .mark img{width:100%;height:auto}
 .stage .title{position:relative;font-size:46px;font-weight:800;color:#fff;letter-spacing:.5px;animation:ink 1.8s 1.5s both}
 .stage .title span{background:linear-gradient(180deg,#FFE6A6,#E2A93B 55%,#B07A12);-webkit-background-clip:text;background-clip:text;color:transparent}
@@ -214,8 +221,8 @@ body.explain .tabs [data-help]{outline-offset:-4px}
 .hero.land>*:not(.land-mark){position:relative}
 .land-mark{position:absolute;inset-inline-end:34px;top:26px;width:92px;height:104px;opacity:.95}
 .land-mark img{position:relative;width:100%;animation:glow 4s ease-in-out infinite}
-.land-mark .beam.slow{position:absolute;left:50%;top:40%;width:1400px;height:1400px;transform:translate(-50%,-50%);border-radius:50%;
-  background:conic-gradient(from 0deg,transparent 0deg,transparent 335deg,rgba(255,225,160,.10) 352deg,rgba(255,240,200,.22) 357deg,transparent 360deg);animation:sweep 9s linear infinite;pointer-events:none}
+.land-mark .ripple{position:absolute;left:50%;top:46%;width:90px;height:90px;margin:-45px 0 0 -45px;border-radius:50%;border:1.5px solid rgba(255,214,120,.45);opacity:0;animation:ripple 6s ease-out infinite;pointer-events:none}
+.land-mark .ripple.r2{animation-delay:2s}.land-mark .ripple.r3{animation-delay:4s}
 .hero.land h1,.hero.land .lead{max-width:calc(100% - 140px)}
 .snd{position:absolute!important;bottom:16px;inset-inline-end:16px;padding:6px 10px}
 .feat{transition:transform .25s ease,box-shadow .25s ease,border-color .25s}
@@ -261,38 +268,53 @@ a.btn{text-decoration:none}
 .oxs{margin:4px 0 0}
 .oxadd .btn{padding:8px 12px;font-size:14px}
 
-/* Budgootee */
-.bgt-fab{position:fixed;inset-inline-end:18px;bottom:18px;z-index:60;border:0;background:radial-gradient(circle at 50% 35%,#16507A,#0B3550 70%);border-radius:50%;width:70px;height:70px;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 0 2px rgba(226,169,59,.7),0 10px 24px -8px rgba(4,25,42,.7);animation:bgtIn .6s ease-out}
-.bgt-fab:hover{transform:translateY(-2px)}
-.bgt-tip{position:absolute;inset-inline-end:80px;white-space:nowrap;background:#fff;color:var(--navy);font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;box-shadow:0 6px 16px -8px rgba(0,0,0,.4);opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
-.bgt-fab:hover .bgt-tip,.bgt-fab:focus-visible .bgt-tip{opacity:1;transform:none}
-.bgt{position:fixed;inset-inline-end:18px;bottom:18px;z-index:61;width:min(380px,calc(100vw - 24px));height:min(560px,calc(100vh - 100px));display:flex;flex-direction:column;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 0 0 1.5px rgba(226,169,59,.6),0 24px 60px -20px rgba(4,25,42,.6);animation:bgtIn .25s ease-out}
-.bgt-h{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,#16507A,#0B3550);color:#fff}
-.bgt-h b{display:block}.bgt-h small{color:#C9D6DF}.bgt-h .sp{flex:1}.bgt-h .btn{color:#fff;border-color:rgba(255,255,255,.3);background:transparent}
+/* Budgootee, the golden drop of oil */
+.bgt-fly{position:fixed;left:0;top:0;z-index:60;will-change:transform}
+.bgt-fly.roam{transition:transform 6.5s cubic-bezier(.45,.05,.4,1)}
+.bgt-fab{position:relative;border:0;background:none;padding:0;width:92px;height:100px;display:grid;place-items:center;cursor:pointer;animation:bgtIn .6s ease-out}
+.bgt-fab .od{transform:scaleX(var(--face,1));filter:drop-shadow(0 0 10px rgba(242,190,78,.75)) drop-shadow(0 8px 10px rgba(120,70,0,.35));animation:odFloat 3.4s ease-in-out infinite}
+.bgt-fab:hover .od{filter:drop-shadow(0 0 18px rgba(255,214,120,1)) drop-shadow(0 8px 10px rgba(120,70,0,.35))}
+.bgt-fab:focus-visible{outline:2px solid #E2A93B;outline-offset:4px;border-radius:50%}
+.bgt-shadow{position:absolute;bottom:0;left:50%;width:38px;height:7px;margin-left:-19px;border-radius:50%;background:rgba(8,38,56,.22);filter:blur(2px);animation:odShadow 3.4s ease-in-out infinite}
+.bgt-peek{position:absolute;bottom:96px;left:50%;transform:translateX(-50%);white-space:nowrap;background:#fff;color:var(--navy);font-weight:700;font-size:13.5px;padding:8px 13px;border-radius:14px;box-shadow:0 0 0 1.5px rgba(226,169,59,.7),0 8px 18px -8px rgba(0,0,0,.4);cursor:pointer;animation:bgtIn .35s ease-out}
+.bgt-peek::after{content:"";position:absolute;bottom:-6px;left:50%;margin-left:-6px;border:6px solid transparent;border-bottom:0;border-top-color:#fff}
+@keyframes odFloat{0%,100%{translate:0 0;rotate:-4deg}50%{translate:0 -9px;rotate:4deg}}
+@keyframes odShadow{0%,100%{transform:scaleX(1);opacity:1}50%{transform:scaleX(.7);opacity:.6}}
+.bgt{position:fixed;inset-inline-end:18px;bottom:18px;z-index:61;width:min(390px,calc(100vw - 24px));height:min(580px,calc(100vh - 100px));display:flex;flex-direction:column;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 0 0 1.5px rgba(226,169,59,.6),0 24px 60px -20px rgba(4,25,42,.6);animation:bgtIn .25s ease-out}
+.bgt-h{display:flex;align-items:center;gap:8px;padding:10px 12px;background:linear-gradient(135deg,#16507A,#0B3550);color:#fff}
+.bgt-h b{display:block}.bgt-h small{color:#C9D6DF}.bgt-h .sp{flex:1}.bgt-h .btn{color:#fff;border-color:rgba(255,255,255,.3);background:transparent;padding:4px 8px}
+.bgt-h .od{filter:drop-shadow(0 0 8px rgba(242,190,78,.6))}
 .bgt-b{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#F5F8FA,#fff)}
-.bgt-m{max-width:85%;padding:9px 12px;border-radius:14px;line-height:1.55;white-space:pre-wrap;font-size:14.5px}
+.bgt-m{position:relative;max-width:85%;padding:9px 12px;border-radius:14px;line-height:1.55;white-space:pre-wrap;font-size:14.5px}
 .bgt-m.a{align-self:flex-start;background:#fff;border:1px solid var(--line);border-start-start-radius:4px}
 .bgt-m.u{align-self:flex-end;background:linear-gradient(180deg,var(--cu-hi),var(--cu));color:#fff;border-start-end-radius:4px}
+.bgt-say{position:absolute;bottom:-10px;inset-inline-end:-8px;border:1px solid rgba(226,169,59,.7);background:#FFF9EC;border-radius:999px;font-size:12px;padding:2px 6px;cursor:pointer}
 .bgt-chips{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
 .bgt-chips button{border:1px solid rgba(226,169,59,.7);background:#FFF9EC;color:var(--navy);border-radius:999px;padding:6px 12px;font-size:13.5px;cursor:pointer;text-align:start}
 .bgt-chips button:hover{background:#FFF1D2}
+.bgt-note{margin:0 10px;padding:8px 11px;border-radius:10px;background:#FFF6E0;border:1px solid rgba(226,169,59,.6);font-size:13px;color:#5A4210}
 .bgt-f{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}.bgt-f input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);font:inherit}
 .bgt-f .btn{padding:8px 14px}
+.bgt-mic{flex:none;width:44px;border-radius:50%;border:1.5px solid rgba(226,169,59,.8);background:radial-gradient(circle at 40% 35%,#FFF0BE,#F2BE4E);font-size:18px;cursor:pointer;box-shadow:0 3px 0 #9A6408}
+.bgt-mic.on{background:#C0392B;color:#fff;border-color:#8E2A1F;box-shadow:0 0 0 0 rgba(192,57,43,.6);animation:micPulse 1.2s infinite}
+@keyframes micPulse{0%{box-shadow:0 0 0 0 rgba(192,57,43,.55)}100%{box-shadow:0 0 0 14px rgba(192,57,43,0)}}
 .bgt-dots i{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:#9AA9B5;animation:bgtDot 1s infinite}.bgt-dots i:nth-child(2){animation-delay:.15s}.bgt-dots i:nth-child(3){animation-delay:.3s}
 @keyframes bgtDot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
 @keyframes bgtIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
-/* the little lighthouse */
-.lh{overflow:visible}.lh .lh-beam{transform-origin:32px 16px;opacity:0}.lh .lh-glow{opacity:.5}
-.lh.idle .lh-eyes{transform-origin:32px 14.5px;animation:lhBlink 4.5s infinite}
-.lh.idle .lh-body{transform-origin:32px 60px;animation:lhBreathe 3.2s ease-in-out infinite}
-.lh.think .lh-beam{opacity:1;animation:lhSweep 1.6s linear infinite}.lh.think .lh-glow{animation:lhGlow 1.6s ease-in-out infinite}
-.lh.talk .lh-body{transform-origin:32px 60px;animation:lhBob .5s ease-in-out infinite}.lh.talk .lh-mouth{transform-origin:32px 19px;animation:lhTalk .25s infinite alternate}
-@keyframes lhBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
-@keyframes lhBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
-@keyframes lhSweep{from{transform:rotate(0)}to{transform:rotate(360deg)}}
-@keyframes lhGlow{0%,100%{opacity:.4}50%{opacity:1}}
-@keyframes lhBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
-@keyframes lhTalk{from{transform:scaleY(1)}to{transform:scaleY(1.8)}}
-@media (prefers-reduced-motion: reduce){.lh *,.bgt,.bgt-fab{animation:none!important}}
-@media print{.bgt,.bgt-fab{display:none}}
+/* the drop's moods */
+.od{overflow:visible}.od .od-rings circle{fill:none;stroke:#F2BE4E;stroke-width:2;opacity:0;transform-origin:32px 44px}
+.od .od-body{transform-origin:32px 68px}
+.od.idle .od-eyes{transform-origin:32px 45px;animation:odBlink 4.5s infinite}
+.od.idle .od-body{animation:odJelly 3.4s ease-in-out infinite}
+.od.think .od-shine{transform-box:fill-box;transform-origin:center;animation:odSwirl 1.4s ease-in-out infinite}.od.think .od-eyes{transform:translate(2px,-2px)}
+.od.talk .od-body{animation:odBounce .45s ease-in-out infinite}.od.talk .od-mouth{transform-origin:32px 53px;animation:odTalk .22s infinite alternate}
+.od.listen .od-eyes{transform-origin:32px 45px;transform:scale(1.25)}.od.listen .od-rings circle{animation:odRing 1.6s ease-out infinite}.od.listen .od-rings circle+circle{animation-delay:.8s}
+@keyframes odBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes odJelly{0%,100%{transform:scale(1,1)}25%{transform:scale(1.04,.96)}50%{transform:scale(.97,1.03)}75%{transform:scale(1.02,.98)}}
+@keyframes odSwirl{0%,100%{transform:translate(0,0) rotate(0)}50%{transform:translate(14px,6px) rotate(40deg)}}
+@keyframes odBounce{0%,100%{transform:translateY(0) scale(1,1)}50%{transform:translateY(-3px) scale(.97,1.04)}}
+@keyframes odTalk{from{transform:scaleY(1)}to{transform:scaleY(1.9)}}
+@keyframes odRing{from{transform:scale(.7);opacity:.8}to{transform:scale(1.35);opacity:0}}
+@media (prefers-reduced-motion: reduce){.od *,.bgt,.bgt-fab,.bgt-fab .od,.bgt-shadow,.bgt-fly{animation:none!important;transition:none!important}}
+@media print{.bgt,.bgt-fly{display:none}}
 .top .btn{white-space:nowrap}

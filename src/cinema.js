@@ -1,4 +1,4 @@
-// A soft "lighthouse" chime made in the browser (no audio file to download).
+// A soft golden chime made in the browser (no audio file to download).
 // Browsers only allow sound after a click or key press, so it never plays by itself.
 let ctx
 export function chime() {
