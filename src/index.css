@@ -100,3 +100,14 @@ body.proj .tot div b{font-size:34px}
 body.proj .big{font-size:80px}
 body.proj .seg button{width:64px;height:56px;font-size:24px}
 body.proj .card p,body.proj .hero p{font-size:22px}
+
+/* budget tab */
+.tot.four{grid-template-columns:repeat(4,1fr)}
+.tot div.neg{background:#FDE7DD}.tot div.neg b{color:var(--red)}
+.tot div.pos{background:var(--gt)}.tot div.pos b{color:var(--grn)}
+.bbar{display:flex;height:10px;background:var(--nt);border-radius:999px;overflow:hidden;margin-top:10px}
+.bbar i{display:block;height:100%}.bbar i.sp{background:var(--blue)}.bbar i.cm{background:var(--amb)}
+.req{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px dashed var(--line);flex-wrap:wrap}
+.req .amt b{font-size:18px;color:var(--navy)}
+@media (max-width:700px){.tot.four{grid-template-columns:1fr 1fr}}
+.hero select{color:var(--ink);background:#fff;padding:9px 12px;border-radius:10px;border:0;font-weight:700}
