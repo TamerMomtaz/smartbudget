@@ -225,3 +225,14 @@ body.explain .tabs [data-help]{outline-offset:-4px}
 @media (max-width:700px){.land-mark{width:56px;height:64px;top:18px;inset-inline-end:16px}.hero.land h1,.hero.land .lead{max-width:calc(100% - 64px)}.stage .title{font-size:34px}}
 @media (prefers-reduced-motion:reduce){.rise,.stage,.stage *,.land-mark *{animation:none!important}.feat:hover{transform:none}}
 a.brand{color:#fff;text-decoration:none}
+
+/* one-page guide */
+.guide .gtoc { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
+.guide .gtoc a { padding: 6px 12px; border-radius: 999px; background: var(--card, #fff); border: 1px solid rgba(20,40,60,.12); text-decoration: none; color: inherit; font-size: 14px; }
+.guide .gtoc a:hover { border-color: var(--copper, #c46a2b); }
+.guide .gsec { scroll-margin-top: 80px; line-height: 1.7; }
+.guide .gsec h3 { margin: 0 0 8px; display: flex; gap: 10px; align-items: center; }
+.guide .gsec ol { padding-inline-start: 22px; } .guide .gsec li { margin: 6px 0; }
+.guide .gsec details { border-top: 1px solid rgba(20,40,60,.1); padding: 10px 0; } .guide .gsec summary { cursor: pointer; font-weight: 600; }
+.guide .gtip { margin-top: 10px; padding: 10px 14px; border-radius: 10px; background: rgba(201,150,60,.12); border-inline-start: 3px solid #c9963c; }
+.top a.btn { text-decoration: none; }

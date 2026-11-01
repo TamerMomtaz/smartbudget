@@ -4,6 +4,7 @@ import { t as T, fmt, approx } from './i18n'
 import * as XLSX from 'xlsx'
 import { readWorkbook, notice, planToDate } from './finance'
 import { HELP } from './help'
+import { GUIDE } from './guide'
 import { chime, soundOn, setSound } from './cinema'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
@@ -24,7 +25,8 @@ export default function App() {
   const [lang, setLang] = useState(localStorage.getItem('sb_lang') || 'en')
   const t = useCallback((k) => T(lang, k), [lang])
   const [welcome, setWelcome] = useState(location.hash === '#welcome')
-  useEffect(() => { const on = () => setWelcome(location.hash === '#welcome'); window.addEventListener('hashchange', on); return () => window.removeEventListener('hashchange', on) }, [])
+  const [guide, setGuide] = useState(location.hash === '#guide')
+  useEffect(() => { const on = () => { setWelcome(location.hash === '#welcome'); setGuide(location.hash === '#guide') }; window.addEventListener('hashchange', on); return () => window.removeEventListener('hashchange', on) }, [])
   useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = lang; localStorage.setItem('sb_lang', lang) }, [lang])
 
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function App() {
   }, [session])
 
   if (session === undefined) return null
+  if (guide) return <Guide t={t} lang={lang} setLang={setLang} onBack={() => { history.replaceState(null, '', ' '); setGuide(false) }} />
   if (!session || welcome) return <Login t={t} lang={lang} setLang={setLang} preview={!!session} onBack={() => { history.replaceState(null, '', ' '); setWelcome(false) }} />
   if (!profile) return <Shell t={t} lang={lang} setLang={setLang} profile={null}><div className="wrap"><div className="card">…</div></div></Shell>
   if (profile.role === 'pending') return <Shell t={t} lang={lang} setLang={setLang} profile={profile}><div className="wrap"><div className="card o"><h2>{t('pending_title')}</h2><p>{t('pending_text')}</p><p className="m">{profile.email}</p></div></div></Shell>
@@ -69,6 +72,7 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
       <a className="brand" href="#welcome" title="Welcome" onClick={() => { try { sessionStorage.removeItem('sb_intro') } catch { /* private mode */ } }}>smart<span>Budget</span> <span className="m" style={{ color: '#C9D6DF', fontWeight: 400 }}>· {t('tagline')}</span></a>
       <div className="sp" />
       {profile && <div className="who">{profile.name || profile.email}<br />{(profile.departments || profile.directorates)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''}</div>}
+      <a className="btn glass" href="#guide" data-help="guide">📖 {t('guide')}</a>
       <button className={'btn glass' + (explain ? ' on' : '')} aria-pressed={explain} onClick={() => setExplain(!explain)}>? {t('explain')}</button>
       <button className="btn glass" data-help="lang" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
       {profile && <button className="btn glass" title={t('pw_set')} onClick={async () => {
@@ -81,6 +85,30 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
     {tabs && <div className="tabs">{tabs.map(x => <button key={x.id} data-help={'tab_' + x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>}
     {children}
     {explain && <HelpPanel lang={lang} onClose={() => setExplain(false)} />}
+  </>
+}
+
+// one page that explains the whole journey; opens from the top bar or the landing (#guide), signed in or not
+const md = (x) => x.split(/(\*\*[^*]+\*\*)/).map((p, i) => p.startsWith('**') ? <b key={i}>{p.slice(2, -2)}</b> : p)
+function Guide({ t, lang, setLang, onBack }) {
+  const g = GUIDE[lang] || GUIDE.en
+  useEffect(() => { window.scrollTo(0, 0) }, [])
+  return <>
+    <div className="top"><img src="/logo.png" alt="" /><span className="brand">smart<span>Budget</span></span><div className="sp" />
+      <button className="btn glass" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
+      <button className="btn glass" onClick={onBack}>{t('back_app')}</button></div>
+    <div className="wrap guide">
+      <div className="hero"><p className="k">📖 {t('guide')}</p><h2>{g.title}</h2><p>{g.lead}</p></div>
+      <nav className="gtoc">{g.sections.map((x, i) => <a key={i} href={'#g' + i} onClick={e => { e.preventDefault(); document.getElementById('g' + i)?.scrollIntoView({ behavior: 'smooth' }) }}>{x.icon} {x.h}</a>)}</nav>
+      {g.sections.map((x, i) => <section key={i} id={'g' + i} className="card gsec">
+        <h3><span>{x.icon}</span> {x.h}</h3>
+        {(x.p || []).map((p, j) => <p key={j}>{md(p)}</p>)}
+        {x.steps && <ol>{x.steps.map((p, j) => <li key={j}>{md(p)}</li>)}</ol>}
+        {x.qa && x.qa.map(([q, a], j) => <details key={j}><summary>{q}</summary><p>{a}</p></details>)}
+        {x.tip && <div className="gtip">💡 {x.tip}</div>}
+      </section>)}
+      <div className="btns"><button className="btn p" onClick={onBack}>{t('back_app')}</button></div>
+    </div>
   </>
 }
 
@@ -117,7 +145,7 @@ function Login({ t, lang, setLang, preview, onBack }) {
       <div className="hero land">
         <div className="land-mark" aria-hidden="true"><div className="beam slow" /><img src="/mark.png" alt="" /></div>
         <p className="k rise" style={{ '--d': '0s' }}>{t('land_kicker')}</p><h1 className="rise" style={{ '--d': '.1s' }}>{t('land_title')}</h1><p className="lead rise" style={{ '--d': '.2s' }}>{t('land_lead')}</p>
-        <div className="btns rise" style={{ '--d': '.3s', marginTop: 0, marginBottom: 18 }}><button className="btn p" onClick={() => { if (preview) { onBack(); return } const el = document.querySelector('.login input[type=email]'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el?.focus(), 400) }}>{preview ? t('back_app') : t('login_title')} {lang === 'ar' ? '←' : '→'}</button></div>
+        <div className="btns rise" style={{ '--d': '.3s', marginTop: 0, marginBottom: 18 }}><button className="btn p" onClick={() => { if (preview) { onBack(); return } const el = document.querySelector('.login input[type=email]'); el?.scrollIntoView({ behavior: 'smooth', block: 'center' }); setTimeout(() => el?.focus(), 400) }}>{preview ? t('back_app') : t('login_title')} {lang === 'ar' ? '←' : '→'}</button><a className="btn glass" href="#guide">📖 {t('land_guide')}</a></div>
         <button className="btn glass snd" aria-pressed={sound} title={t('land_sound')} onClick={toggleSound}>{sound ? '🔊' : '🔈'}</button>
         <div className="feats">{[['🧭', 'land_f1'], ['💰', 'land_f2'], ['🗳️', 'land_f3'], ['💡', 'land_f4']].map(([i, k], n) => <div key={k} className="feat rise" style={{ '--d': (0.35 + n * 0.12) + 's' }}><span>{i}</span><b>{t(k + '_t')}</b><p>{t(k)}</p></div>)}</div></div>
     </div>
