@@ -289,6 +289,22 @@ function Field({ a, set, canEdit, k, label, hint, type = 'text', area, need, t }
 
 // typed digits (Latin or Arabic-Indic) → plain number string; shown back with thousands separators
 const digits = (v) => String(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\D/g, '')
+// hiring asks: the yearly people cost is easier to get right from headcount × monthly cost × months
+function HireCalc({ t, lang, a, set }) {
+  const [n, setN] = useState(''), [m, setM] = useState(''), [from, setFrom] = useState(1)
+  const months = 13 - from, total = (Number(n) || 0) * (Number(m) || 0) * months
+  return <details className="more hire" data-help="hire"><summary>👷 {t('hire_t')}</summary>
+    <p className="m">{t('hire_b')}</p>
+    <div className="row">
+      <label className="f"><span>{t('hire_n')}</span><input type="text" inputMode="numeric" dir="ltr" value={n} placeholder="0" onChange={e => setN(digits(e.target.value))} /></label>
+      <label className="f"><span>{t('hire_m')}</span><input type="text" inputMode="numeric" dir="ltr" value={m ? Number(m).toLocaleString('en') : ''} placeholder="0" onChange={e => setM(digits(e.target.value))} />{Number(m) > 0 && <small className="words">{approx(lang, m)}</small>}</label>
+      <label className="f"><span>{t('hire_from')}</span><select value={from} onChange={e => setFrom(Number(e.target.value))}>{Array.from({ length: 12 }, (_, i) => <option key={i} value={i + 1}>{new Date(2027, i, 1).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en', { month: 'long' })} · {12 - i} {t('hire_months')}</option>)}</select></label>
+    </div>
+    {total > 0 && <div className="btns"><span><b>{Number(n)} × {fmt(Number(m))} × {months} = {fmt(total)}</b> {t('opex_lbl')}</span>
+      <button type="button" className="btn p" onClick={() => { set('opex_people', String(total)); const line = `${Number(n)} × ${fmt(Number(m))} × ${months}`; if (!String(a.opex_notes || '').includes(line)) set('opex_notes', ((a.opex_notes ? a.opex_notes + '\n' : '') + t('hire_note') + ': ' + line)) }}>{t('hire_use')}</button></div>}
+  </details>
+}
+
 function MoneyInput({ a, set, canEdit, k, label, lang, disabled, need, t, help }) {
   const v = a[k] === '' || a[k] == null ? '' : Number(a[k]).toLocaleString('en')
   const filled = !!Number(a[k])
@@ -483,6 +499,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       </div>
       <div className="card o"><p className="k">{t('s_tcd')}</p><p className="m">{t('tcd_hint')}</p>
         <div className="row">{OPEX.map(k => <MoneyInput a={a} set={set} canEdit={canEdit} key={k} k={k} help="opex" label={t(k)} lang={lang} t={t} />)}</div>
+        {canEdit && <HireCalc t={t} lang={lang} a={a} set={set} />}
         {F({ k: 'opex_notes', label: t('opex_notes'), area: true })}
         <div className="tot"><div><span>{t('capex_lbl')}</span><b>{a.quote_decides ? '—' : fmt(cx)}</b></div><div className="o"><span>{t('opex_lbl')}</span><b>{fmt(oy)}</b></div><div><span>{t('year_one')} · {t('yearly_after')}</span><b>{fmt(cx + oy)} · {fmt(oy)}</b></div></div>
       </div>
