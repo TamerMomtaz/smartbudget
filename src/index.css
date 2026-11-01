@@ -260,3 +260,39 @@ a.btn{text-decoration:none}
 .oxh{display:flex;align-items:center;gap:10px}.oxh .sp{flex:1}.oxt{color:var(--navy)}.oxt small{font-weight:400;color:#6B7B88}
 .oxs{margin:4px 0 0}
 .oxadd .btn{padding:8px 12px;font-size:14px}
+
+/* Budgootee */
+.bgt-fab{position:fixed;inset-inline-end:18px;bottom:18px;z-index:60;border:0;background:radial-gradient(circle at 50% 35%,#16507A,#0B3550 70%);border-radius:50%;width:70px;height:70px;display:grid;place-items:center;cursor:pointer;box-shadow:0 0 0 2px rgba(226,169,59,.7),0 10px 24px -8px rgba(4,25,42,.7);animation:bgtIn .6s ease-out}
+.bgt-fab:hover{transform:translateY(-2px)}
+.bgt-tip{position:absolute;inset-inline-end:80px;white-space:nowrap;background:#fff;color:var(--navy);font-weight:700;font-size:13px;padding:7px 12px;border-radius:999px;box-shadow:0 6px 16px -8px rgba(0,0,0,.4);opacity:0;transform:translateX(6px);transition:.2s;pointer-events:none}
+.bgt-fab:hover .bgt-tip,.bgt-fab:focus-visible .bgt-tip{opacity:1;transform:none}
+.bgt{position:fixed;inset-inline-end:18px;bottom:18px;z-index:61;width:min(380px,calc(100vw - 24px));height:min(560px,calc(100vh - 100px));display:flex;flex-direction:column;background:#fff;border-radius:18px;overflow:hidden;box-shadow:0 0 0 1.5px rgba(226,169,59,.6),0 24px 60px -20px rgba(4,25,42,.6);animation:bgtIn .25s ease-out}
+.bgt-h{display:flex;align-items:center;gap:10px;padding:10px 12px;background:linear-gradient(135deg,#16507A,#0B3550);color:#fff}
+.bgt-h b{display:block}.bgt-h small{color:#C9D6DF}.bgt-h .sp{flex:1}.bgt-h .btn{color:#fff;border-color:rgba(255,255,255,.3);background:transparent}
+.bgt-b{flex:1;overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:8px;background:linear-gradient(180deg,#F5F8FA,#fff)}
+.bgt-m{max-width:85%;padding:9px 12px;border-radius:14px;line-height:1.55;white-space:pre-wrap;font-size:14.5px}
+.bgt-m.a{align-self:flex-start;background:#fff;border:1px solid var(--line);border-start-start-radius:4px}
+.bgt-m.u{align-self:flex-end;background:linear-gradient(180deg,var(--cu-hi),var(--cu));color:#fff;border-start-end-radius:4px}
+.bgt-chips{display:flex;flex-direction:column;gap:6px;align-items:flex-start}
+.bgt-chips button{border:1px solid rgba(226,169,59,.7);background:#FFF9EC;color:var(--navy);border-radius:999px;padding:6px 12px;font-size:13.5px;cursor:pointer;text-align:start}
+.bgt-chips button:hover{background:#FFF1D2}
+.bgt-f{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}.bgt-f input{flex:1;min-width:0;padding:10px 12px;border-radius:10px;border:1px solid var(--line);font:inherit}
+.bgt-f .btn{padding:8px 14px}
+.bgt-dots i{display:inline-block;width:6px;height:6px;margin:0 2px;border-radius:50%;background:#9AA9B5;animation:bgtDot 1s infinite}.bgt-dots i:nth-child(2){animation-delay:.15s}.bgt-dots i:nth-child(3){animation-delay:.3s}
+@keyframes bgtDot{0%,80%,100%{opacity:.3;transform:translateY(0)}40%{opacity:1;transform:translateY(-3px)}}
+@keyframes bgtIn{from{opacity:0;transform:translateY(12px) scale(.96)}to{opacity:1;transform:none}}
+/* the little lighthouse */
+.lh{overflow:visible}.lh .lh-beam{transform-origin:32px 16px;opacity:0}.lh .lh-glow{opacity:.5}
+.lh.idle .lh-eyes{transform-origin:32px 14.5px;animation:lhBlink 4.5s infinite}
+.lh.idle .lh-body{transform-origin:32px 60px;animation:lhBreathe 3.2s ease-in-out infinite}
+.lh.think .lh-beam{opacity:1;animation:lhSweep 1.6s linear infinite}.lh.think .lh-glow{animation:lhGlow 1.6s ease-in-out infinite}
+.lh.talk .lh-body{transform-origin:32px 60px;animation:lhBob .5s ease-in-out infinite}.lh.talk .lh-mouth{transform-origin:32px 19px;animation:lhTalk .25s infinite alternate}
+@keyframes lhBlink{0%,92%,100%{transform:scaleY(1)}95%{transform:scaleY(.1)}}
+@keyframes lhBreathe{0%,100%{transform:scale(1)}50%{transform:scale(1.025)}}
+@keyframes lhSweep{from{transform:rotate(0)}to{transform:rotate(360deg)}}
+@keyframes lhGlow{0%,100%{opacity:.4}50%{opacity:1}}
+@keyframes lhBob{0%,100%{transform:translateY(0)}50%{transform:translateY(-2px)}}
+@keyframes lhTalk{from{transform:scaleY(1)}to{transform:scaleY(1.8)}}
+@media (prefers-reduced-motion: reduce){.lh *,.bgt,.bgt-fab{animation:none!important}}
+@media print{.bgt,.bgt-fab{display:none}}
+.top .btn{white-space:nowrap}

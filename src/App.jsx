@@ -5,6 +5,7 @@ import * as XLSX from 'xlsx'
 import { readWorkbook, notice, planToDate } from './finance'
 import { HELP } from './help'
 import { GUIDE } from './guide'
+import Budgootee from './Budgootee'
 import { chime, soundOn, setSound } from './cinema'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
@@ -85,6 +86,7 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
     {tabs && <div className="tabs">{tabs.map(x => <button key={x.id} data-help={'tab_' + x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>}
     {children}
     {explain && <HelpPanel lang={lang} onClose={() => setExplain(false)} />}
+    {profile && profile.role !== 'pending' && <Budgootee t={t} lang={lang} profile={profile} screen={tab || ''} />}
   </>
 }
 
