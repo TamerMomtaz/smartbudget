@@ -34,7 +34,7 @@ export default function App() {
   }, [])
   useEffect(() => {
     if (!session) { setProfile(null); return }
-    supabase.from('profiles').select('*, departments(*), directorates(*)').eq('user_id', session.user.id).maybeSingle().then(({ data }) => { setProfile(data); if (data && !data.last_seen_at) supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', data.id).then(() => {}) })
+    supabase.from('profiles').select('*, departments(*), directorates(*)').eq('user_id', session.user.id).maybeSingle().then(({ data }) => { setProfile(data); if (data && !data.last_seen_at) { try { sessionStorage.removeItem('sb_intro') } catch { /* private mode */ } setWelcome(true) } if (data && !data.last_seen_at) supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', data.id).then(() => {}) })
   }, [session])
 
   if (session === undefined) return null
