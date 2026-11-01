@@ -289,20 +289,52 @@ function Field({ a, set, canEdit, k, label, hint, type = 'text', area, need, t }
 
 // typed digits (Latin or Arabic-Indic) → plain number string; shown back with thousands separators
 const digits = (v) => String(v).replace(/[٠-٩]/g, d => '٠١٢٣٤٥٦٧٨٩'.indexOf(d)).replace(/[۰-۹]/g, d => '۰۱۲۳۴۵۶۷۸۹'.indexOf(d)).replace(/\D/g, '')
-// hiring asks: the yearly people cost is easier to get right from headcount × monthly cost × months
-function HireCalc({ t, lang, a, set }) {
-  const [n, setN] = useState(''), [m, setM] = useState(''), [from, setFrom] = useState(1)
-  const months = 13 - from, total = (Number(n) || 0) * (Number(m) || 0) * months
-  return <details className="more hire" data-help="hire"><summary>👷 {t('hire_t')}</summary>
-    <p className="m">{t('hire_b')}</p>
-    <div className="row">
-      <label className="f"><span>{t('hire_n')}</span><input type="text" inputMode="numeric" dir="ltr" value={n} placeholder="0" onChange={e => setN(digits(e.target.value))} /></label>
-      <label className="f"><span>{t('hire_m')}</span><input type="text" inputMode="numeric" dir="ltr" value={m ? Number(m).toLocaleString('en') : ''} placeholder="0" onChange={e => setM(digits(e.target.value))} />{Number(m) > 0 && <small className="words">{approx(lang, m)}</small>}</label>
-      <label className="f"><span>{t('hire_from')}</span><select value={from} onChange={e => setFrom(Number(e.target.value))}>{Array.from({ length: 12 }, (_, i) => <option key={i} value={i + 1}>{new Date(2027, i, 1).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en', { month: 'long' })} · {12 - i} {t('hire_months')}</option>)}</select></label>
-    </div>
-    {total > 0 && <div className="btns"><span><b>{Number(n)} × {fmt(Number(m))} × {months} = {fmt(total)}</b> {t('opex_lbl')}</span>
-      <button type="button" className="btn p" onClick={() => { set('opex_people', String(total)); const line = `${Number(n)} × ${fmt(Number(m))} × ${months}`; if (!String(a.opex_notes || '').includes(line)) set('opex_notes', ((a.opex_notes ? a.opex_notes + '\n' : '') + t('hire_note') + ': ' + line)) }}>{t('hire_use')}</button></div>}
-  </details>
+// OPEX as a list of costs, each of its own kind with its own fields (Ahmed, QC, 2026-11-01).
+// The yearly totals still roll up into the six opex_* columns, so the room, outputs and Excel stay as they are.
+const HAS_ITEMS = { on: false }
+supabase.from('asks').select('opex_items').limit(1).then(({ error }) => { HAS_ITEMS.on = !error })
+const KINDS = {
+  people: { icon: '👷', col: 'opex_people' }, training: { icon: '🎓', col: 'opex_training' }, tools: { icon: '🛠️', col: 'opex_other' },
+  place: { icon: '🏢', col: 'opex_other' }, consumables: { icon: '⚡', col: 'opex_consumables' }, maintenance: { icon: '🔧', col: 'opex_maintenance' },
+  licences: { icon: '💳', col: 'opex_licences' }, other: { icon: '➕', col: 'opex_other' },
+}
+const N = (v) => Number(v) || 0
+const itemYear = (x) => x.kind === 'people' ? N(x.count) * (N(x.salary) + N(x.extra)) * (13 - (N(x.from) || 1))
+  : x.kind === 'training' ? N(x.count) * N(x.price)
+  : x.kind === 'tools' ? N(x.count) * N(x.price)
+  : x.kind === 'place' ? N(x.monthly) * (13 - (N(x.from) || 1))
+  : N(x.amount)
+const COL_KIND = { opex_people: 'people', opex_training: 'training', opex_consumables: 'consumables', opex_maintenance: 'maintenance', opex_licences: 'licences', opex_other: 'other' }
+function OpexItems({ t, lang, a, setA, dirty, canEdit }) {
+  // older cards only have the six totals: show each as one simple item
+  const items = Array.isArray(a.opex_items) && a.opex_items.length ? a.opex_items
+    : OPEX.filter(k => N(a[k])).map(k => ({ kind: COL_KIND[k], what: '', amount: N(a[k]) }))
+  const write = (next) => {
+    dirty.current = true
+    const cols = Object.fromEntries(OPEX.map(k => [k, 0])); next.forEach(x => { cols[KINDS[x.kind].col] += itemYear(x) })
+    setA(p => ({ ...p, opex_items: next, ...Object.fromEntries(Object.entries(cols).map(([k, v]) => [k, String(Math.round(v))])) }))
+  }
+  const upd = (i, k, v) => write(items.map((x, j) => j === i ? { ...x, [k]: v } : x))
+  const months = (v, i) => <select value={v || 1} disabled={!canEdit} onChange={e => upd(i, 'from', Number(e.target.value))}>{Array.from({ length: 12 }, (_, m) => <option key={m} value={m + 1}>{new Date(2027, m, 1).toLocaleString(lang === 'ar' ? 'ar-EG' : 'en', { month: 'long' })} · {12 - m} {t('ox_months')}</option>)}</select>
+  const numIn = (x, i, k, label) => <label className="f" key={k}><span>{label}</span><input type="text" inputMode="numeric" dir="ltr" disabled={!canEdit} placeholder="0" value={x[k] ? Number(x[k]).toLocaleString('en') : ''} onChange={e => upd(i, k, digits(e.target.value))} />{N(x[k]) >= 1000 && <small className="words">{approx(lang, x[k])}</small>}</label>
+  const fields = (x, i) => ({
+    people: [numIn(x, i, 'count', t('ox_count')), numIn(x, i, 'salary', t('ox_salary')), numIn(x, i, 'extra', t('ox_extra')), <label className="f" key="f"><span>{t('ox_from')}</span>{months(x.from, i)}</label>],
+    training: [numIn(x, i, 'count', t('ox_trainees')), numIn(x, i, 'price', t('ox_per_person'))],
+    tools: [numIn(x, i, 'count', t('ox_qty')), numIn(x, i, 'price', t('ox_unit_year'))],
+    place: [numIn(x, i, 'monthly', t('ox_monthly')), <label className="f" key="f"><span>{t('ox_from')}</span>{months(x.from, i)}</label>],
+  }[x.kind] || [numIn(x, i, 'amount', t('ox_amount'))])
+  const sum = (x) => ({ people: `${N(x.count)} × ${fmt(N(x.salary) + N(x.extra))} × ${13 - (N(x.from) || 1)}`, training: `${N(x.count)} × ${fmt(N(x.price))}`, tools: `${N(x.count)} × ${fmt(N(x.price))}`, place: `${fmt(N(x.monthly))} × ${13 - (N(x.from) || 1)}` }[x.kind])
+  return <div data-help="opex">
+    {items.length === 0 && <p className="m">{t('ox_empty')}</p>}
+    {items.map((x, i) => <div key={i} className="oxi">
+      <div className="oxh"><b>{KINDS[x.kind].icon} {t('ox_' + x.kind)}</b><span className="sp" /><b className="oxt">{fmt(itemYear(x))} <small>{t('ox_per_year')}</small></b>{canEdit && <button type="button" className="btn ghost sm" title={t('ox_remove')} onClick={() => write(items.filter((_, j) => j !== i))}>✕</button>}</div>
+      {t('ox_hint_' + x.kind) !== 'ox_hint_' + x.kind && <p className="m">{t('ox_hint_' + x.kind)}</p>}
+      <label className="f"><span>{t('ox_what_' + x.kind) !== 'ox_what_' + x.kind ? t('ox_what_' + x.kind) : t('ox_what')}</span><input type="text" value={x.what || ''} disabled={!canEdit} onChange={e => upd(i, 'what', e.target.value)} /></label>
+      <div className="row">{fields(x, i)}</div>
+      {sum(x) && itemYear(x) > 0 && <p className="m oxs">{sum(x)} = <b>{fmt(itemYear(x))}</b></p>}
+    </div>)}
+    {canEdit && <><p className="k" style={{ marginTop: 12 }}>{t('ox_add')}</p><div className="btns oxadd">{Object.entries(KINDS).map(([k, v]) => <button type="button" key={k} className="btn" onClick={() => write([...items, { kind: k, from: 1 }])}>{v.icon} {t('ox_' + k)}</button>)}</div></>}
+  </div>
 }
 
 function MoneyInput({ a, set, canEdit, k, label, lang, disabled, need, t, help }) {
@@ -381,7 +413,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const payload = (status) => ({
     cycle_id: refd.cycle.id, department_id: a.department_id, owner_id: profile.id, title: a.title.trim(), lane: a.register_code === 'ENGINE' ? 'engine' : a.register_code ? 'station' : 'other', register_code: a.register_code || null, lane_other: (a.lane_other || '').trim() || null,
     what_text: a.what_text, capex_class: a.capex_class, capex_amount: a.quote_decides ? null : num(a.capex_amount), quote_decides: !!a.quote_decides, quarter: a.quarter,
-    ...Object.fromEntries(OPEX.map(k => [k, num(a[k]) ?? 0])), opex_notes: a.opex_notes, return_text: a.return_text, return_when: a.return_when, measure_text: a.measure_text, measure_when: a.measure_when,
+    ...Object.fromEntries(OPEX.map(k => [k, num(a[k]) ?? 0])), opex_notes: a.opex_notes, ...(HAS_ITEMS.on ? { opex_items: a.opex_items || [] } : {}), return_text: a.return_text, return_when: a.return_when, measure_text: a.measure_text, measure_when: a.measure_when,
     if_not_funded: a.if_not_funded, what_we_stop: a.what_we_stop, budget_line_id: a.budget_line_id || null, link_none: !!a.link_none && !a.register_code && !a.budget_line_id, status, submitted_at: status === 'submitted' ? new Date().toISOString() : a.submitted_at || null,
     ...(status === 'returned' ? { director_note: note.trim() } : {}),
   })
@@ -389,7 +421,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const missing = [
     !a.title.trim() && ['s_title', 0], !a.department_id && ['department', 0],
     !a.register_code && !(a.lane_other || '').trim() && ['s_other', 0], !String(a.what_text || '').trim() && ['s_what', 0],
-    !a.quote_decides && !Number(a.capex_amount) && ['capex_amount', 1],
+    !a.quote_decides && !Number(a.capex_amount) && !opexYear(a) && ['capex_amount', 1],
     !String(a.return_text || '').trim() && ['s_return', 2], !String(a.measure_text || '').trim() && ['s_measure', 2],
     !String(a.if_not_funded || '').trim() && ['s_ifnot', 3],
   ].filter(Boolean)
@@ -498,8 +530,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
         {files.map(f => <div key={f.id}><a href="#" onClick={e => { e.preventDefault(); open(f.path) }}>📎 {f.name}</a></div>)}
       </div>
       <div className="card o"><p className="k">{t('s_tcd')}</p><p className="m">{t('tcd_hint')}</p>
-        <div className="row">{OPEX.map(k => <MoneyInput a={a} set={set} canEdit={canEdit} key={k} k={k} help="opex" label={t(k)} lang={lang} t={t} />)}</div>
-        {canEdit && <HireCalc t={t} lang={lang} a={a} set={set} />}
+        <OpexItems t={t} lang={lang} a={a} setA={setA} dirty={dirty} canEdit={canEdit} />
         {F({ k: 'opex_notes', label: t('opex_notes'), area: true })}
         <div className="tot"><div><span>{t('capex_lbl')}</span><b>{a.quote_decides ? '—' : fmt(cx)}</b></div><div className="o"><span>{t('opex_lbl')}</span><b>{fmt(oy)}</b></div><div><span>{t('year_one')} · {t('yearly_after')}</span><b>{fmt(cx + oy)} · {fmt(oy)}</b></div></div>
       </div>

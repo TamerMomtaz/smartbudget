@@ -4,7 +4,6 @@ export const HELP = {
   en: {
     intro: { t: 'Explain mode is on', b: 'Tap, click or move into any field or button with a dotted outline, and its explanation shows here. Everything still works as usual while this is on.', how: 'Turn it off with the same "? Explain" button at the top.' },
     guide: { t: 'Guide', b: 'One page that walks the whole journey: writing a card, the director, the room, how funded cards join the budget, GL lines, finance’s Excel and signing in.', how: 'Open it any time. It works before signing in too, so you can send the link to someone new: smartbudget.devoneerstechnology.ai/#guide' },
-    hire: { t: 'Hiring calculator', b: 'For asks that are people, not machines. CAPEX stays 0; the cost is the yearly salary bill, which is OPEX.', how: 'Headcount × monthly cost of one person × months in 2027 from the start month. Press “Use this figure” and it fills “People” and writes the sum in the notes.' },
     lang: { t: 'Language', b: 'Switches the whole platform between Arabic and English. Your cards stay exactly the same; only the labels change.', how: 'Tap once. Your choice is remembered on this browser.' },
     tab_asks: { t: 'Cards (Asks)', b: 'Each card is one request for Budget 2027: a machine, a project, a fix. Heads write cards, directors review and send them to the room.', how: 'Tap "+ New card", or open an existing one to continue.' },
     tab_room: { t: 'The room', b: 'Where the committee sees each card on the projector and scores it from 0 to 3 on each question.', how: 'Use the arrow keys to move between cards; projector mode makes everything big.' },
@@ -25,7 +24,7 @@ export const HELP = {
     quarter: { t: 'When', b: 'The quarter you need the money. It helps finance plan the cash.', how: 'Choose the quarter you would place the order.' },
     quote_decides: { t: 'Waiting for a quote', b: 'Tick this when you do not have a price yet and the supplier quote will decide it.', how: 'Attach the quote later when it arrives.' },
     quote: { t: 'Quote or picture', b: 'Any supplier quote, photo or drawing that helps the room understand the ask.', how: 'PDF or image. You can attach several.' },
-    opex: { t: 'Running costs every year', b: 'What this costs each year after it is bought: people, training, consumables, maintenance, licences. The room sees the true cost, not just the price tag.', how: 'Fill only what applies; leave the rest empty.' },
+    opex: { t: 'Running costs every year', b: 'What this costs each year after it is bought: people, training, consumables, maintenance, licences. The room sees the true cost, not just the price tag.', how: 'Press the kind of cost you need (People, Training, Tools…). Each opens its own fields and works out the yearly figure. A hiring ask can have CAPEX 0.' },
     opex_notes: { t: 'Notes on running costs', b: 'Anything that explains the yearly numbers.', how: 'Optional.' },
     return_text: { t: 'The return', b: 'What gets better, in numbers if you can: hours saved, tonnes more, accidents avoided, money saved.', how: 'One clear benefit beats five vague ones.' },
     return_when: { t: 'When the return starts', b: 'How long after it arrives until the benefit shows.', how: 'Example: "within 3 months of installation".' },
@@ -48,7 +47,6 @@ export const HELP = {
   ar: {
     intro: { t: 'وضع "فهمني" شغّال', b: 'المس أو اضغط أو ادخل على أي خانة أو زرار عليه خط منقّط، وشرحه هيظهر هنا. كل حاجة بتشتغل عادي وإنت في الوضع ده.', how: 'اقفله من نفس زرار "؟ فهمني" اللي فوق.' },
     guide: { t: 'الدليل', b: 'صفحة واحدة بتمشي معاك الرحلة كلها: كتابة الكارت، المدير، الغرفة، إزاي الكارت المعتمد بيدخل الميزانية، بنود الـGL، شيت المالية والدخول.', how: 'افتحها في أي وقت. بتشتغل من غير دخول كمان، فتقدر تبعت اللينك لأي حد جديد: smartbudget.devoneerstechnology.ai/#guide' },
-    hire: { t: 'حاسبة التعيين', b: 'للطلبات اللي هي ناس مش ماكينات. الـCAPEX بيفضل صفر، والتكلفة هي المرتبات في السنة، ودي OPEX.', how: 'العدد × تكلفة الفرد في الشهر × شهور 2027 من شهر البداية. دوس «استخدم الرقم ده» وهيملا خانة «أفراد» ويكتب الحسبة في الملاحظات.' },
     lang: { t: 'اللغة', b: 'بيقلب المنصة كلها عربي أو إنجليزي. الكروت زي ما هي، اللي بيتغير الكلام بس.', how: 'دوسة واحدة، واختيارك بيتحفظ على المتصفح ده.' },
     tab_asks: { t: 'الكروت', b: 'كل كارت طلب واحد لميزانية 2027: ماكينة، مشروع، إصلاح. رئيس القسم يكتب، والمدير يراجع ويبعت للجنة.', how: 'دوس "+ كارت جديد"، أو افتح كارت موجود وكمّل.' },
     tab_room: { t: 'اللجنة', b: 'المكان اللي اللجنة بتشوف فيه كل كارت على البروجكتور وتديله درجة من 0 لـ3 في كل سؤال.', how: 'استخدم الأسهم للتنقل، ووضع البروجكتور بيكبّر كل حاجة.' },
@@ -69,7 +67,7 @@ export const HELP = {
     quarter: { t: 'إمتى', b: 'الربع اللي محتاج فيه الفلوس. بيساعد المالية تخطط السيولة.', how: 'اختار الربع اللي هتطلب فيه.' },
     quote_decides: { t: 'مستني عرض سعر', b: 'علّم هنا لو لسه معندكش سعر وعرض المورد هو اللي هيحدد.', how: 'ارفع العرض لما يوصل.' },
     quote: { t: 'عرض سعر أو صورة', b: 'أي عرض سعر أو صورة أو رسمة تساعد اللجنة تفهم الطلب.', how: 'PDF أو صورة، وتقدر ترفع أكتر من واحد.' },
-    opex: { t: 'التكلفة كل سنة', b: 'الحاجة دي هتكلف كام كل سنة بعد ما تتشتري: ناس، تدريب، مستهلكات، صيانة، تراخيص. اللجنة تشوف التكلفة الحقيقية مش السعر بس.', how: 'املا اللي ينطبق بس، وسيب الباقي فاضي.' },
+    opex: { t: 'التكلفة كل سنة', b: 'الحاجة دي هتكلف كام كل سنة بعد ما تتشتري: ناس، تدريب، مستهلكات، صيانة، تراخيص. اللجنة تشوف التكلفة الحقيقية مش السعر بس.', how: 'دوس على نوع التكلفة (أفراد، تدريب، أدوات…). كل نوع بيفتح خاناته وبيحسب الرقم السنوي. طلب التعيين ممكن يكون الـCAPEX بتاعه صفر.' },
     opex_notes: { t: 'ملاحظات على التكلفة السنوية', b: 'أي حاجة بتشرح الأرقام السنوية.', how: 'اختياري.' },
     return_text: { t: 'العائد', b: 'إيه اللي هيتحسن، بالأرقام لو تقدر: ساعات أقل، أطنان أكتر، حوادث أقل، فلوس متوفرة.', how: 'فايدة واحدة واضحة أحسن من خمسة مش واضحين.' },
     return_when: { t: 'العائد يبدأ إمتى', b: 'بعد ما توصل بقد إيه الفايدة تبان.', how: 'مثال: "خلال ٣ شهور من التركيب".' },
