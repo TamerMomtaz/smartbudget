@@ -938,7 +938,7 @@ function People({ t, lang, refd, show }) {
     if (error) { show(error.message); return false }
     await supabase.from('profiles').update({ invited_at: new Date().toISOString() }).eq('id', p.id); return true
   }
-  const one = async (p) => { setBusy(true); if (await invite(p)) show(t('invite_ok') + ' ' + p.email); setBusy(false); load() }
+  const one = async (p) => { setBusy(p.id); if (await invite(p)) show(t('invite_ok') + ' ' + p.email); setBusy(false); load() }
   const all = async () => { setBusy(true); for (const p of list.filter(x => !x.last_seen_at && !x.invited_at && x.role !== 'pending')) { if (!(await invite(p))) break } setBusy(false); load() }
   const place = (x, set) => (x.role === 'head' || x.role === 'pending')
     ? <DeptSelect value={x.department_id} onChange={v => set(x.role === 'pending' && v ? { department_id: v, role: 'head' } : { department_id: v })} deps={refd.departments} refd={refd} lang={lang} blank />
@@ -963,7 +963,7 @@ function People({ t, lang, refd, show }) {
         <td>{roles(p.role, v => upd(p, { role: v }))}</td>
         <td>{place(p, patch => upd(p, patch))}</td>
         <td style={{ textAlign: 'center' }}><input type="checkbox" checked={!!p.in_room} onChange={e => upd(p, { in_room: e.target.checked })} /></td>
-        <td style={{ whiteSpace: 'nowrap' }}>{p.last_seen_at ? <span className="pill green">✓ {t('signed_in')}</span> : <button className="btn" disabled={busy} onClick={() => one(p)}>✉ {p.invited_at ? t('reinvite') : t('invite')}</button>}</td></tr>)}
+        <td style={{ whiteSpace: 'nowrap' }}>{p.last_seen_at ? <span className="pill green">✓ {t('signed_in')}</span> : <button className="btn" disabled={!!busy} onClick={() => one(p)}>{busy === p.id ? '…' : '✉'} {p.invited_at ? t('reinvite') : t('invite')}</button>}</td></tr>)}
     </tbody></table></div>
   </>
 }
