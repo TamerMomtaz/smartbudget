@@ -8,7 +8,7 @@ const dict = {
     new_ask: 'New ask', no_asks: 'No asks yet. Each ask is one card: what it is for, what it costs in full, what it returns, how we measure it.',
     draft: 'Draft', submitted: 'Submitted', pitched: 'Pitched', green: 'Funded', yellow: 'Come back', gate: 'Waits for a gate', ordered: 'Ordered', delivered: 'Delivered', measured: 'Measured', withdrawn: 'Withdrawn',
     s_title: 'Title', s_title_h: 'One line. What is it? e.g. "Electric forklift with drum tilter, B2"',
-    s_lane: '1 · The goal', linked_to: 'Linked to ExCom idea', unlink: 'Remove link', looks_like: 'This sounds like the ExCom idea', link_it: 'Link it', link_excom: '+ Link to an ExCom consolidated idea (optional)', lane_engine: 'Protects the engine (brake fluid & coolant)', lane_station: 'Builds a station on the staircase', lane_other: 'Other / own goal (free)', s_other: 'What goal does it serve?', s_other_hint: 'in your own words, any goal is fine (safety, compliance, replacement, a new idea…)', s_register: 'Which row of the register?',
+    s_lane: '1 · The goal', linked_to: 'Linked to ExCom idea', unlink: 'Remove link', looks_like: 'This sounds like the ExCom idea', link_it: 'Link it', link_excom: 'Link to an ExCom idea (optional)', link_gl: 'Link to a GL line (budget)', gl_pick_dept: 'Choose the department first (above), then its GL lines appear here.', lane_engine: 'Protects the engine (brake fluid & coolant)', lane_station: 'Builds a station on the staircase', lane_other: 'Other / own goal (free)', s_other: 'What goal does it serve?', s_other_hint: 'in your own words, any goal is fine (safety, compliance, replacement, a new idea…)', s_register: 'Which row of the register?',
     s_what: 'What exactly, and what will you do with it?',
     lane_hint: 'Pick one. "Protects the engine" = it keeps today\'s business (brake fluid & coolant) safe or running better. "Builds a station" = it prepares a new business or capability for the future. "Other" = anything else; write the goal in your own words. Click to choose; the dark button is your choice.',
     s_ask: '2 · The ask (CAPEX)', capex_class: 'Capex class', c_none: 'None', c_light: 'Light', c_significant: 'Significant',
@@ -59,7 +59,7 @@ const dict = {
     b_record: 'Record spending', b_record_hint: 'Write it when the money actually goes out, in parts if it is paid in parts. AX later confirms it.', b_my_lines: 'Our GL lines', b_against: 'Against an approved request', b_date: 'Date', b_note: 'Note', b_spend_ok: 'Spending recorded',
     b_lines_hint: 'Write your department\'s GL lines yourselves. Start typing a GL code or name and pick from the list of known GLs. Finance can lock a line once it is agreed.', b_gl_ph: 'e.g. 6101', b_line_name: 'GL name', b_last_year: 'Last year', b_add_line: 'Add GL line',
     b_up: 'Up', b_down: 'Down', b_why_change: 'Finance will ask why; be ready to explain it.', b_locked: 'Locked by finance', b_lock: 'Lock (agreed)', b_unlock: 'Unlock', b_spent_log: 'Spending recorded',
-    gl_section: 'GL line (budget)', gl_in: 'In your GL', gl_choose: 'Or choose a GL line', gl_none_yet: 'Your department has no GL lines yet. Add them in the Budget tab.', gl_new_money: 'Not in a GL line (new money)',
+    gl_section: 'GL line (budget)', gl_in: 'In your GL', gl_choose: 'Choose a GL line', gl_none_yet: 'Your department has no GL lines yet. Add them in the Budget tab.', gl_new_money: 'Not in a GL line (new money)',
     history: 'History', lang: 'العربية',
   },
   ar: {
@@ -71,7 +71,7 @@ const dict = {
     new_ask: 'طلب جديد', no_asks: 'مفيش طلبات لسه. كل طلب كارت واحد: ليه، تكلفته الكاملة، هيرجّع إيه، وهنقيسه إزاي.',
     draft: 'مسودة', submitted: 'مُرسل', pitched: 'تم عرضه', green: 'مُعتمد', yellow: 'يرجع تاني', gate: 'ينتظر بوابة', ordered: 'تم الطلب', delivered: 'تم التسليم', measured: 'تم القياس', withdrawn: 'مسحوب',
     s_title: 'العنوان', s_title_h: 'سطر واحد. إيه هو؟ مثال: "فوركليفت كهربائي بقلّاب براميل، مبنى ٢"',
-    s_lane: '١ · الهدف', linked_to: 'مربوط بفكرة الإكسكوم', unlink: 'إلغاء الربط', looks_like: 'ده شبه فكرة الإكسكوم', link_it: 'اربطه', link_excom: '+ اربطه بفكرة من أفكار الإكسكوم المجمّعة (اختياري)', lane_engine: 'يحمي المحرك (زيت الفرامل والكولانت)', lane_station: 'يبني محطة على السلم', lane_other: 'هدف تاني / حر', s_other: 'بيخدم أنهي هدف؟', s_other_hint: 'بكلامك، أي هدف ينفع (سلامة، التزام قانوني، إحلال، فكرة جديدة…)', s_register: 'أنهي سطر في السجل؟',
+    s_lane: '١ · الهدف', linked_to: 'مربوط بفكرة الإكسكوم', unlink: 'إلغاء الربط', looks_like: 'ده شبه فكرة الإكسكوم', link_it: 'اربطه', link_excom: 'اربطه بفكرة من أفكار الإكسكوم (اختياري)', link_gl: 'اربطه ببند GL (الميزانية)', gl_pick_dept: 'اختار القسم الأول (فوق)، وبعدها بنود الـGL بتاعته تظهر هنا.', lane_engine: 'يحمي المحرك (زيت الفرامل والكولانت)', lane_station: 'يبني محطة على السلم', lane_other: 'هدف تاني / حر', s_other: 'بيخدم أنهي هدف؟', s_other_hint: 'بكلامك، أي هدف ينفع (سلامة، التزام قانوني، إحلال، فكرة جديدة…)', s_register: 'أنهي سطر في السجل؟',
     s_what: 'إيه بالظبط، وهتعمل بيه إيه؟',
     lane_hint: 'اختار واحد. "يحمي المحرك" = بيحافظ على شغلنا الحالي (زيت الفرامل والكولانت) أو بيحسّنه. "يبني محطة" = بيجهّز لشغل أو قدرة جديدة للمستقبل. "هدف تاني" = أي حاجة تانية؛ اكتب الهدف بكلامك. اضغط للاختيار؛ الزرار الغامق هو اختيارك.',
     s_ask: '٢ · الطلب (كابكس)', capex_class: 'فئة الكابكس', c_none: 'لا شيء', c_light: 'خفيف', c_significant: 'كبير',
@@ -122,7 +122,7 @@ const dict = {
     b_record: 'سجّل مصروف', b_record_hint: 'اكتبه لما الفلوس تطلع فعلاً، وعلى دفعات لو بيتدفع على دفعات. الـAX يأكده بعدين.', b_my_lines: 'بنود الـGL بتاعتنا', b_against: 'على طلب متوافق عليه', b_date: 'التاريخ', b_note: 'ملاحظة', b_spend_ok: 'المصروف اتسجل',
     b_lines_hint: 'اكتبوا بنود الـGL بتاعة قسمكم بنفسكم. ابدأ اكتب كود أو اسم الـGL واختار من القائمة. المالية تقدر تقفل البند لما يتفق عليه.', b_gl_ph: 'مثلاً 6101', b_line_name: 'اسم الـGL', b_last_year: 'السنة اللي فاتت', b_add_line: 'ضيف بند GL',
     b_up: 'زيادة', b_down: 'نقص', b_why_change: 'المالية هتسأل ليه؛ خلي السبب جاهز.', b_locked: 'مقفول من المالية', b_lock: 'اقفل (متفق عليه)', b_unlock: 'افتح', b_spent_log: 'المصروف المتسجّل',
-    gl_section: 'بند الـGL (الميزانية)', gl_in: 'في الـGL بتاعك', gl_choose: 'أو اختار بند GL', gl_none_yet: 'قسمك لسه ما عندوش بنود GL. ضيفها من تاب الميزانية.', gl_new_money: 'مش في بند GL (فلوس جديدة)',
+    gl_section: 'بند الـGL (الميزانية)', gl_in: 'في الـGL بتاعك', gl_choose: 'اختار بند GL', gl_none_yet: 'قسمك لسه ما عندوش بنود GL. ضيفها من تاب الميزانية.', gl_new_money: 'مش في بند GL (فلوس جديدة)',
     history: 'السجل', lang: 'English',
   }
 }

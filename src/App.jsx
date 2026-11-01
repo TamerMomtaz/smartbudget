@@ -361,22 +361,21 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       </div>
       <div className="card"><p className="k">{t('s_lane')}</p>
         {F({ k: 'lane_other', label: t('s_other'), hint: t('s_other_hint'), need: !a.register_code })}
-        {linked ? <div className="row" style={{ alignItems: 'center', gap: 8 }}><span className="pill">{t('linked_to')}: {regLabel(linked)}</span>{canEdit && <button className="btn" onClick={() => set('register_code', '')}>{t('unlink')}</button>}</div>
-          : <>
-            {canEdit && hints.map(r => <div key={r.code} className="card o" style={{ margin: '6px 0', padding: 10 }}>💡 {t('looks_like')} <b>{regLabel(r)}</b> <button className="btn" style={{ marginInlineStart: 8 }} onClick={() => set('register_code', r.code)}>{t('link_it')}</button></div>)}
-            {canEdit && !pick && <button className="btn" onClick={() => setPick(true)}>{t('link_excom')}</button>}
-            {canEdit && pick && <label className="f"><span>{t('s_register')}</span><select value="" onChange={e => { set('register_code', e.target.value); setPick(false) }}><option value="">—</option>{refd.register.map(r => <option key={r.code} value={r.code}>{regLabel(r)}</option>)}</select></label>}
-          </>}
+        {/* two optional links, side by side: which ExCom idea it serves, and which GL line pays for it */}
+        {linked && <div className="row linked"><span className="pill">🎯 {t('linked_to')}: {regLabel(linked)}</span>{canEdit && <button className="btn ghost sm" onClick={() => set('register_code', '')}>{t('unlink')}</button>}</div>}
+        {gl && <div className="row linked"><span className="pill green">📒 {t('gl_in')}: {glLabel(gl)} · {t('b_budget')} {fmt(gl.amount)} · {t('b_left')} {fmt(GB.line(gl.id).left)}</span>{canEdit && <button className="btn ghost sm" onClick={() => set('budget_line_id', null)}>{t('unlink')}</button>}</div>}
+        {canEdit && !linked && hints.map(r => <div key={r.code} className="card o hintc">💡 {t('looks_like')} <b>{regLabel(r)}</b> <button className="btn" onClick={() => set('register_code', r.code)}>{t('link_it')}</button></div>)}
+        {canEdit && !gl && glHints.map(l => <div key={l.id} className="card o hintc">💡 {t('b_looks_gl')} <b>{glLabel(l)}</b> · {t('b_budget')} {fmt(l.amount)} · {t('b_left')} {fmt(GB.line(l.id).left)} <button className="btn" onClick={() => set('budget_line_id', l.id)}>{t('link_it')}</button></div>)}
+        {!gl && a.department_id && !glHints.length && a.title.trim().length > 4 && GB.lines.length > 0 && <p className="m">ℹ️ {t('b_not_in_gl')}</p>}
+        {canEdit && (!linked || !gl) && <div className="btns" style={{ marginTop: 6 }}>
+          {!linked && <button className={'btn ' + (pick === 'excom' ? 'p' : '')} onClick={() => setPick(pick === 'excom' ? false : 'excom')}>🎯 {t('link_excom')}</button>}
+          {!gl && <button className={'btn ' + (pick === 'gl' ? 'p' : '')} onClick={() => setPick(pick === 'gl' ? false : 'gl')}>📒 {t('link_gl')}</button>}
+        </div>}
+        {canEdit && pick === 'excom' && !linked && <label className="f"><span>{t('s_register')}</span><select value="" onChange={e => { set('register_code', e.target.value); setPick(false) }}><option value="">—</option>{refd.register.map(r => <option key={r.code} value={r.code}>{regLabel(r)}</option>)}</select></label>}
+        {canEdit && pick === 'gl' && !gl && (!a.department_id ? <p className="m">ℹ️ {t('gl_pick_dept')}</p> : !GB.lines.length ? <p className="m">ℹ️ {t('gl_none_yet')}</p>
+          : <label className="f"><span>{t('gl_choose')}</span><select value="" onChange={e => { if (e.target.value) { set('budget_line_id', Number(e.target.value)); setPick(false) } }}><option value="">—</option>{GB.lines.map(l => <option key={l.id} value={l.id}>{glLabel(l)}</option>)}</select></label>)}
         {F({ k: 'what_text', label: t('s_what'), area: true, need: true })}
       </div>
-      {a.department_id && <div className="card"><p className="k">{t('gl_section')}</p>
-        {gl ? <div className="row" style={{ alignItems: 'center', gap: 8 }}><span className="pill green">{t('gl_in')}: {glLabel(gl)} · {t('b_budget')} {fmt(gl.amount)} · {t('b_left')} {fmt(GB.line(gl.id).left)}</span>{canEdit && <button className="btn" onClick={() => set('budget_line_id', null)}>{t('unlink')}</button>}</div>
-          : <>
-            {canEdit && glHints.map(l => <div key={l.id} className="card o hintc">💡 {t('b_looks_gl')} <b>{glLabel(l)}</b> · {t('b_budget')} {fmt(l.amount)} · {t('b_left')} {fmt(GB.line(l.id).left)} <button className="btn" onClick={() => set('budget_line_id', l.id)}>{t('link_it')}</button></div>)}
-            {!glHints.length && a.title.trim().length > 4 && <p className="m">ℹ️ {GB.lines.length ? t('b_not_in_gl') : t('gl_none_yet')}</p>}
-            {canEdit && GB.lines.length > 0 && <label className="f"><span>{t('gl_choose')}</span><select value="" onChange={e => e.target.value && set('budget_line_id', Number(e.target.value))}><option value="">—</option>{GB.lines.map(l => <option key={l.id} value={l.id}>{glLabel(l)}</option>)}</select></label>}
-          </>}
-      </div>}
     </>}
 
     {step === 1 && <>
