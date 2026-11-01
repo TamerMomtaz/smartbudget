@@ -36,3 +36,19 @@ create policy "sr withdraw" on spend_requests for delete to authenticated using 
 create index if not exists bl_dep on budget_lines(fiscal_year, department_id);
 create index if not exists sa_dep on spend_actuals(fiscal_year, department_id);
 create index if not exists sr_dep on spend_requests(fiscal_year, department_id);
+
+-- 2026-11-01 (later): departments write their own GL lines (until finance locks them); manual spending; GL catalogue
+alter table budget_lines add column if not exists locked boolean not null default false;
+alter table budget_lines add column if not exists created_by uuid references profiles(id);
+alter table spend_actuals add column if not exists source text not null default 'ax' check (source in ('ax','manual'));
+alter table spend_actuals add column if not exists request_id bigint references spend_requests(id) on delete set null;
+alter table asks add column if not exists budget_line_id bigint references budget_lines(id) on delete set null;
+create policy "bl dept insert" on budget_lines for insert to authenticated with check (can_write_dept(department_id) and not locked);
+create policy "bl dept update" on budget_lines for update to authenticated using (can_write_dept(department_id) and not locked) with check (can_write_dept(department_id) and not locked);
+create policy "bl dept delete" on budget_lines for delete to authenticated using (can_write_dept(department_id) and not locked);
+create policy "sa manual insert" on spend_actuals for insert to authenticated with check (source = 'manual' and can_write_dept(department_id) and uploaded_by = (select id from profiles where user_id = auth.uid()));
+create policy "sa manual delete" on spend_actuals for delete to authenticated using (source = 'manual' and uploaded_by = (select id from profiles where user_id = auth.uid()));
+create table if not exists gl_catalog (code text primary key, name text not null, created_at timestamptz default now());
+alter table gl_catalog enable row level security;
+create policy "glc read" on gl_catalog for select to authenticated using (true);
+create policy "glc admin" on gl_catalog for all to authenticated using (current_role_() = 'admin') with check (current_role_() = 'admin');
