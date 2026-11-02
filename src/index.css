@@ -356,7 +356,7 @@ a.btn{text-decoration:none}
 [dir=rtl] .dv-truck{left:66vw}[dir=rtl] .dv-runner{left:38vw}[dir=rtl] .dv-msg{left:60%}
 [dir=rtl] .dv-msg{direction:rtl}
 
-/* ===== ARENA: the dark, metallic, gamified look (🎮 in the top bar). The business look above stays the default. ===== */
+/* ===== ARENA: the dark, metallic, gamified look (moon/sun button in the top bar). The business look above stays the default. ===== */
 html[data-theme=arena]{color-scheme:dark;--bg:#0A0F14;--card:#141C24;--line:#2B3946;--ink:#E3EAF0;--mut:#93A3B1;--ot:#2A1B11;--nt:#1A2531;--gt:#10271B;--yt:#2A220E;--grn:#3DDC84;--yel:#FFC94D;--red:#FF7A45;--blue:#5BB8FF;--ag-edge:#06090C;--neon:#5BB8FF;--gold:#E2A93B}
 html[data-theme=arena] body{background:radial-gradient(1000px 520px at 50% -180px,rgba(91,184,255,.16),transparent 62%),radial-gradient(700px 400px at 100% 100%,rgba(226,169,59,.08),transparent 60%),repeating-linear-gradient(0deg,rgba(255,255,255,.022) 0 1px,transparent 1px 44px),repeating-linear-gradient(90deg,rgba(255,255,255,.022) 0 1px,transparent 1px 44px),#0A0F14;background-attachment:fixed;color:var(--ink)}
 html[data-theme=arena] a{color:var(--neon)}

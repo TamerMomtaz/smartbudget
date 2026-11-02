@@ -27,6 +27,9 @@ export default function App() {
   const t = useCallback((k) => T(lang, k), [lang])
   const [welcome, setWelcome] = useState(location.hash === '#welcome')
   const [guide, setGuide] = useState(location.hash === '#guide')
+  // sign-in links land on #confirm…&token_hash=…: a person presses one button to sign in, so Outlook's link scanner cannot use the link up first
+  const [confirm] = useState(() => { const h = new URLSearchParams(location.hash.slice(1)); return h.get('token_hash') ? { token_hash: h.get('token_hash'), type: h.get('type') || 'email' } : null })
+  const [expired] = useState(() => /error_code=otp_expired|access_denied/.test(location.hash))
   useEffect(() => { const on = () => { setWelcome(location.hash === '#welcome'); setGuide(location.hash === '#guide') }; window.addEventListener('hashchange', on); return () => window.removeEventListener('hashchange', on) }, [])
   useEffect(() => { document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr'; document.documentElement.lang = lang; localStorage.setItem('sb_lang', lang) }, [lang])
 
@@ -41,8 +44,9 @@ export default function App() {
   }, [session])
 
   if (session === undefined) return null
+  if (confirm && !session) return <Confirm t={t} lang={lang} setLang={setLang} confirm={confirm} />
   if (guide) return <Guide t={t} lang={lang} setLang={setLang} onBack={() => { history.replaceState(null, '', ' '); setGuide(false) }} />
-  if (!session || welcome) return <Login t={t} lang={lang} setLang={setLang} preview={!!session} onBack={() => { history.replaceState(null, '', ' '); setWelcome(false) }} />
+  if (!session || welcome) return <Login t={t} lang={lang} setLang={setLang} expired={expired} preview={!!session} onBack={() => { history.replaceState(null, '', ' '); setWelcome(false) }} />
   if (!profile) return <Shell t={t} lang={lang} setLang={setLang} profile={null}><div className="wrap"><div className="card">…</div></div></Shell>
   if (profile.role === 'pending') return <Shell t={t} lang={lang} setLang={setLang} profile={profile}><div className="wrap"><div className="card o"><h2>{t('pending_title')}</h2><p>{t('pending_text')}</p><p className="m">{profile.email}</p></div></div></Shell>
   return <Main t={t} lang={lang} setLang={setLang} profile={profile} />
@@ -80,7 +84,9 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
       {profile && <div className="who">{profile.name || profile.email}<br />{(profile.departments || profile.directorates)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''}</div>}
       <a className="btn glass" href="#guide" data-help="guide">📖 {t('guide')}</a>
       <button className={'btn glass' + (explain ? ' on' : '')} aria-pressed={explain} onClick={() => setExplain(!explain)}>? {t('explain')}</button>
-      <button className="btn glass" data-help="theme" title={t(theme === 'arena' ? 'theme_biz' : 'theme_arena')} aria-pressed={theme === 'arena'} onClick={() => setTheme(theme === 'arena' ? 'biz' : 'arena')}>{theme === 'arena' ? '💼' : '🎮'}</button>
+      <button className="btn glass" data-help="theme" title={t(theme === 'arena' ? 'theme_biz' : 'theme_arena')} aria-pressed={theme === 'arena'} onClick={() => setTheme(theme === 'arena' ? 'biz' : 'arena')}>{theme === 'arena'
+        ? <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="5" fill="#FFE08A" /><g stroke="#FFE08A" strokeWidth="2" strokeLinecap="round"><path d="M12 2v2M12 20v2M2 12h2M20 12h2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4" /></g></svg>
+        : <svg width="20" height="20" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.5A8 8 0 0 1 9.5 4a8 8 0 1 0 10.5 10.5Z" fill="#E8EEF3" /><circle cx="17" cy="5" r="1.2" fill="#FFE08A" /><circle cx="20" cy="9" r=".8" fill="#FFE08A" /></svg>}</button>
       <button className="btn glass" data-help="lang" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
       {profile && <button className="btn glass" data-help="pw" title={t('pw_set')} onClick={async () => {
         const p1 = prompt(t('pw_set') + ' (8+)'); if (!p1) return; if (p1.length < 8) { alert(t('pw_short')); return }
@@ -120,10 +126,25 @@ function Guide({ t, lang, setLang, onBack }) {
   </>
 }
 
-function Login({ t, lang, setLang, preview, onBack }) {
+function Confirm({ t, lang, setLang, confirm }) {
+  const [busy, setBusy] = useState(false), [err, setErr] = useState(null)
+  const go = async () => {
+    setBusy(true); setErr(null)
+    const { error } = await supabase.auth.verifyOtp({ token_hash: confirm.token_hash, type: confirm.type })
+    setBusy(false)
+    if (error) setErr(t('link_dead')); else history.replaceState(null, '', ' ')
+  }
+  return <Shell t={t} lang={lang} setLang={setLang}><div className="wrap login"><div className="card center">
+    <img src="/logo.png" alt="Al Manar Group" /><h1>{t('confirm_title')}</h1><p className="m">{t('confirm_hint')}</p>
+    <div className="btns" style={{ justifyContent: 'center' }}><button className="btn p" disabled={busy} onClick={go}>{busy ? '…' : t('confirm_btn')} {lang === 'ar' ? '←' : '→'}</button></div>
+    {err && <><p className="err">{err}</p><p><a href="/">{t('link_new')}</a></p></>}
+  </div></div></Shell>
+}
+
+function Login({ t, lang, setLang, preview, onBack, expired }) {
   const [email, setEmail] = useState(''); const [sent, setSent] = useState(false); const [err, setErr] = useState(null); const [busy, setBusy] = useState(false)
   // two ways in: the e-mail link (always works), or a password the person set once from the 🔑 button
-  const [usePw, setUsePw] = useState(() => { try { return localStorage.getItem('sb_pw') === '1' } catch { return false } }); const [pw, setPw] = useState('')
+  const [code, setCode] = useState(''); const [usePw, setUsePw] = useState(() => { try { return localStorage.getItem('sb_pw') === '1' } catch { return false } }); const [pw, setPw] = useState('')
   const go = async (e) => {
     e.preventDefault(); setBusy(true); setErr(null)
     if (usePw) {
@@ -161,7 +182,14 @@ function Login({ t, lang, setLang, preview, onBack }) {
       <div className="card center rise" style={{ '--d': '.8s' }}>
         <img src="/logo.png" alt="Al Manar Group" />
         <h1>{t('login_title')}</h1>
-        {sent ? <p className="m">{t('link_sent')}</p> : <form onSubmit={go}>
+        {expired && !sent && <p className="card o" style={{ padding: 10, fontSize: 15 }}>⏰ {t('link_dead')}</p>}
+        {sent ? <form onSubmit={async e => { e.preventDefault(); setBusy(true); setErr(null); const { error } = await supabase.auth.verifyOtp({ email: email.trim(), token: code.trim(), type: 'email' }); setBusy(false); if (error) setErr(t('code_bad')); else history.replaceState(null, '', ' ') }}>
+          <p className="m">{t('link_sent')}</p>
+          <p className="m" style={{ marginTop: 14 }}><b>{t('code_or')}</b></p>
+          <input type="text" inputMode="numeric" autoComplete="one-time-code" maxLength={10} value={code} onChange={e => setCode(e.target.value.replace(/\D/g, ''))} placeholder="123456" style={{ textAlign: 'center', fontSize: 24, letterSpacing: 8, maxWidth: 260 }} />
+          <div className="btns" style={{ justifyContent: 'center' }}><button className="btn p" disabled={busy || code.length < 6}>{t('login_title')}</button><button type="button" className="btn ghost" onClick={() => { setSent(false); setCode('') }}>{t('code_again')}</button></div>
+          {err && <p className="err">{err}</p>}
+        </form> : <form onSubmit={go}>
           <div className="seg wide loginway" role="tablist">{[[false, '📧 ' + t('way_link')], [true, '🔑 ' + t('pw')]].map(([v, l]) => <button key={l} type="button" role="tab" aria-selected={usePw === v} className={usePw === v ? 'on' : ''} onClick={() => { setUsePw(v); setErr(null) }}>{l}</button>)}</div>
           <p className="m">{usePw ? t('pw_hint') : t('login_hint')}</p>
           <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@almanargroup.com" autoComplete="username" />
