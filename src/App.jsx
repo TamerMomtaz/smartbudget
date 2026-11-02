@@ -82,11 +82,11 @@ function Shell({ t, lang, setLang, profile, children, tabs, tab, setTab }) {
       <button className={'btn glass' + (explain ? ' on' : '')} aria-pressed={explain} onClick={() => setExplain(!explain)}>? {t('explain')}</button>
       <button className="btn glass" data-help="theme" title={t(theme === 'arena' ? 'theme_biz' : 'theme_arena')} aria-pressed={theme === 'arena'} onClick={() => setTheme(theme === 'arena' ? 'biz' : 'arena')}>{theme === 'arena' ? '💼' : '🎮'}</button>
       <button className="btn glass" data-help="lang" onClick={() => setLang(lang === 'ar' ? 'en' : 'ar')}>{t('lang')}</button>
-      {profile && <button className="btn glass" title={t('pw_set')} onClick={async () => {
+      {profile && <button className="btn glass" data-help="pw" title={t('pw_set')} onClick={async () => {
         const p1 = prompt(t('pw_set') + ' (8+)'); if (!p1) return; if (p1.length < 8) { alert(t('pw_short')); return }
         const p2 = prompt(t('pw_again')); if (p1 !== p2) { alert(t('pw_nomatch')); return }
         const { error } = await supabase.auth.updateUser({ password: p1 }); alert(error ? error.message : '✓ ' + t('pw_ok'))
-      }}>🔑</button>}
+      }}>🔑 <span className="pwl">{t('pw')}</span></button>}
       {profile && <button className="btn glass" onClick={() => supabase.auth.signOut()}>{t('sign_out')}</button>}
     </div>
     {tabs && <div className="tabs">{tabs.map(x => <button key={x.id} data-help={'tab_' + x.id} className={tab === x.id ? 'on' : ''} onClick={() => setTab(x.id)}>{x.label}</button>)}</div>}
@@ -162,11 +162,12 @@ function Login({ t, lang, setLang, preview, onBack }) {
         <img src="/logo.png" alt="Al Manar Group" />
         <h1>{t('login_title')}</h1>
         {sent ? <p className="m">{t('link_sent')}</p> : <form onSubmit={go}>
+          <div className="seg wide loginway" role="tablist">{[[false, '📧 ' + t('way_link')], [true, '🔑 ' + t('pw')]].map(([v, l]) => <button key={l} type="button" role="tab" aria-selected={usePw === v} className={usePw === v ? 'on' : ''} onClick={() => { setUsePw(v); setErr(null) }}>{l}</button>)}</div>
           <p className="m">{usePw ? t('pw_hint') : t('login_hint')}</p>
           <input type="email" required value={email} onChange={e => setEmail(e.target.value)} placeholder="name@almanargroup.com" autoComplete="username" />
           {usePw && <input type="password" required value={pw} onChange={e => setPw(e.target.value)} placeholder={t('pw')} autoComplete="current-password" style={{ marginTop: 10, width: '100%', padding: '11px 12px', border: '1px solid #D3DCE3', borderRadius: 10 }} />}
           <div className="btns" style={{ justifyContent: 'center' }}><button className="btn p" disabled={busy}>{usePw ? t('login_title') : t('send_link')}</button></div>
-          <p><a href="#" onClick={e => { e.preventDefault(); setUsePw(!usePw); setErr(null) }}>{usePw ? t('pw_use_link') : t('pw_use')}</a></p>
+          {usePw && <p className="m" style={{ fontSize: 13 }}>{t('pw_first')}</p>}
           {err && <p className="err">{err}</p>}
         </form>}
       </div>
