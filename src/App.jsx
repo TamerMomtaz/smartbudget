@@ -680,7 +680,7 @@ function Room({ t, lang, profile, refd, show }) {
         <div className={'big ' + colorOf(tot.total)}>{tot.total ?? '—'}<span style={{ fontSize: 18, color: 'var(--mut)' }}> / 12</span></div>
         <div className="m" style={{ marginTop: 8 }}>{t('q_fit')} {tot.fit ?? '—'} · {t('q_evidence')} {tot.evidence ?? '—'} · {t('q_reversible')} {tot.reversible ?? '—'} · {t('q_payback')} {tot.payback ?? '—'}</div>
         <p className="m" style={{ fontSize: 13 }}>{t('legend')}</p>
-        {profile.role === 'admin' && <><p className="k">{t('decide')}</p><div className="btns" style={{ marginTop: 4 }}>
+        {(profile.role === 'admin' || profile.role === 'excom') && <><p className="k">{t('decide')}</p><div className="btns" style={{ marginTop: 4 }}>
           <button className="btn" onClick={() => decide('pitched')}>{t('set_pitched')}</button>
           <button className="btn g" onClick={() => decide('green')}>{t('set_green')}</button>
           <button className="btn y" onClick={() => decide('yellow')}>{t('set_yellow')}</button>
