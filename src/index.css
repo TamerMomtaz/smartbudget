@@ -437,3 +437,17 @@ html[data-theme=arena] h1,html[data-theme=arena] h2,html[data-theme=arena] .tot 
 /* sign-in: two clear ways in */
 .loginway{display:flex;margin:4px auto 12px;max-width:340px}.loginway button{flex:1;font-size:15px;min-height:42px}
 @media (max-width:1100px){.top .pwl{display:none}}
+
+/* director page: grouped board, cards by department, review one by one */
+.board tr.grp td{background:#EEF3F7;cursor:pointer;border-top:2px solid #C9D6DF}
+.board tr.grp:hover td{background:#E2EBF2}
+.grp-h{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:18px;flex-wrap:wrap}
+.grp-h .k{margin:0}
+.dep-grp{margin-top:10px}
+.dep-h{margin:12px 2px 6px;font-weight:700;font-size:14px;color:var(--ink,#0B2236)}
+.review-bar{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:#FFF8F0;border:1px solid #F3C9A6;border-radius:12px;padding:10px 14px;margin:10px 0}
+.review-bar b{flex:1}
+html[data-theme=arena] .board tr.grp td{background:rgba(212,175,55,.08);border-top-color:rgba(212,175,55,.35)}
+html[data-theme=arena] .board tr.grp:hover td{background:rgba(212,175,55,.14)}
+html[data-theme=arena] .dep-h{color:#E9D9A6}
+html[data-theme=arena] .review-bar{background:linear-gradient(180deg,#1A222B,#121920);border-color:rgba(212,175,55,.45);color:#F2E6C0}

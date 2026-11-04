@@ -264,36 +264,62 @@ function AskRow({ a, t, lang, onOpen, showDept }) {
   </div>
 }
 
-// one row per department in the director's scope: who has not started, what is waiting, how much is asked
+// one row per department in the director's scope, grouped by directorate (own directorate first, open).
+// Other directorates start folded into one summary line; a click opens them.
 function Board({ t, lang, profile, refd, list }) {
   const [heads, setHeads] = useState([])
   useEffect(() => { supabase.from('profiles').select('name,email,department_id,last_seen_at').eq('role', 'head').then(({ data }) => setHeads(data || [])) }, [])
+  const nm = (x) => x?.[lang === 'ar' ? 'name_ar' : 'name_en']
   const deps = myDeps(profile, refd)
+  const mine = myDirectorate(profile, refd)
   const rows = deps.map(d => {
     const as = list.filter(a => a.department_id === d.id)
     return { d, head: heads.find(h => h.department_id === d.id), n: as.length, draft: as.filter(a => ['draft', 'returned'].includes(a.status)).length, you: as.filter(a => a.status === 'with_director').length, room: as.filter(a => !['draft', 'returned', 'with_director'].includes(a.status)).length, capex: as.reduce((s, a) => s + capex(a), 0) }
   })
+  const dirs = [...refd.directorates].sort((a, b) => (b.id === mine) - (a.id === mine))
+  const groups = dirs.map(g => ({ g, rows: rows.filter(r => r.d.directorate_id === g.id) })).filter(x => x.rows.length)
+  const loose = rows.filter(r => !r.d.directorate_id); if (loose.length) groups.push({ g: { id: 0, name_en: '—', name_ar: '—' }, rows: loose })
+  const many = groups.length > 1
+  const [open, setOpen] = useState(() => new Set([mine]))
+  const flip = (id) => setOpen(o => { const n = new Set(o); n.has(id) ? n.delete(id) : n.add(id); return n })
   const max = Math.max(1, ...rows.map(r => r.capex))
+  const sum = (rs, k) => rs.reduce((s, r) => s + r[k], 0)
+  const cell = (v, cls) => v ? <span className={'pill ' + cls}>{v}</span> : '·'
   return <div className="card" style={{ overflowX: 'auto', marginTop: 12 }}><p className="k">{t('board_title')}</p><p className="m" style={{ marginTop: -4 }}>{t('board_hint')}</p>
+    {many && <div className="btns" style={{ marginTop: 0 }}><button className="btn" onClick={() => setOpen(new Set(groups.map(x => x.g.id)))}>{t('board_open_all')}</button><button className="btn" onClick={() => setOpen(new Set([mine]))}>{t('board_fold')}</button></div>}
     <table className="tb board"><thead><tr><th>{t('department')}</th><th>{t('board_head')}</th><th>{t('board_draft')}</th><th>{t('board_with_you')}</th><th>{t('board_room')}</th><th>{t('board_capex')}</th></tr></thead><tbody>
-      {rows.map(r => <tr key={r.d.id} className={r.n ? '' : 'idle'}><td><b>{r.d[lang === 'ar' ? 'name_ar' : 'name_en']}</b></td>
-        <td>{r.head ? (r.head.name || r.head.email.split('@')[0]) : '—'}{r.head && !r.head.last_seen_at && <span className="m"> · {t('invite')}?</span>}</td>
-        {r.n ? <><td>{r.draft ? <span className="pill draft">{r.draft}</span> : '·'}</td><td>{r.you ? <span className="pill with_director">{r.you}</span> : '·'}</td><td>{r.room ? <span className="pill submitted">{r.room}</span> : '·'}</td></> : <td colSpan={3}><span className="pill draft">{t('board_not_started')}</span></td>}
-        <td style={{ minWidth: 140 }}>{r.capex ? <><div>{fmt(r.capex)}</div><div className="bar"><i style={{ width: (100 * r.capex / max) + '%' }} /></div></> : ''}</td></tr>)}
+      {groups.map(({ g, rows: rs }) => { const on = !many || open.has(g.id), n = sum(rs, 'n'), c = sum(rs, 'capex'); return <Fragment key={g.id}>
+        {many && <tr className="grp" onClick={() => flip(g.id)}><td colSpan={2}><b>{on ? '▾' : lang === 'ar' ? '◂' : '▸'} {nm(g)}</b> <span className="m">· {rs.length} {t(rs.length === 1 ? 'board_dep' : 'board_deps')}</span></td>
+          {n ? <><td>{cell(sum(rs, 'draft'), 'draft')}</td><td>{cell(sum(rs, 'you'), 'with_director')}</td><td>{cell(sum(rs, 'room'), 'submitted')}</td></> : <td colSpan={3}><span className="m">{t('board_not_started')}</span></td>}
+          <td>{c ? <b>{fmt(c)}</b> : ''}</td></tr>}
+        {on && rs.map(r => <tr key={r.d.id} className={r.n ? '' : 'idle'}><td><b>{nm(r.d)}</b></td>
+          <td>{r.head ? (r.head.name || r.head.email.split('@')[0]) : '—'}{r.head && !r.head.last_seen_at && <span className="m"> · {t('invite')}?</span>}</td>
+          {r.n ? <><td>{cell(r.draft, 'draft')}</td><td>{cell(r.you, 'with_director')}</td><td>{cell(r.room, 'submitted')}</td></> : <td colSpan={3}><span className="pill draft">{t('board_not_started')}</span></td>}
+          <td style={{ minWidth: 140 }}>{r.capex ? <><div>{fmt(r.capex)}</div><div className="bar"><i style={{ width: (100 * r.capex / max) + '%' }} /></div></> : ''}</td></tr>)}
+      </Fragment> })}
     </tbody></table></div>
 }
 
 function Asks({ t, lang, profile, refd, show }) {
   const [list, setList] = useState([]); const [edit, setEdit] = useState(null)
+  const [queue, setQueue] = useState(null) // review one by one: { ids, i }
   const load = useCallback(async () => {
     const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar,directorate_id)').eq('cycle_id', refd.cycle.id).neq('status', 'withdrawn').order('created_at')
     setList(data || [])
   }, [refd.cycle.id])
   useEffect(() => { load() }, [load])
   const sums = list.reduce((s, a) => ({ capex: s.capex + capex(a), opex: s.opex + opexYear(a) }), { capex: 0, opex: 0 })
-  if (edit) return <AskForm t={t} lang={lang} profile={profile} refd={refd} ask={edit} show={show} onDone={() => { setEdit(null); load() }} />
+  const goto = (q) => { if (!q || q.i >= q.ids.length) { setQueue(null); setEdit(null); if (q) show(t('review_done')); load(); return } const a = list.find(x => x.id === q.ids[q.i]); if (!a) return goto({ ...q, i: q.i + 1 }); setQueue(q); setEdit(a) }
+  if (edit) return <>
+    {queue && <div className="review-bar"><b>▶ {t('review_one')}</b><span className="pill">{queue.i + 1} / {queue.ids.length}</span>
+      <button className="btn" onClick={() => goto({ ...queue, i: queue.i + 1 })}>{t('review_skip')} {lang === 'ar' ? '‹' : '›'}</button>
+      <button className="btn" onClick={() => goto(null)}>✕ {t('review_stop')}</button></div>}
+    <AskForm key={edit.id || 'new'} t={t} lang={lang} profile={profile} refd={refd} ask={edit} show={show} onDone={() => queue ? goto({ ...queue, i: queue.i + 1 }) : (setEdit(null), load())} />
+  </>
   const head = profile.role === 'head'
   const early = ['draft', 'returned']
+  const byDept = (items) => refd.departments.map(d => [d, items.filter(a => a.department_id === d.id)]).filter(([, as]) => as.length)
+    .concat(items.some(a => !refd.departments.find(d => d.id === a.department_id)) ? [[null, items.filter(a => !refd.departments.find(d => d.id === a.department_id))]] : [])
   const groups = head ? [[null, list]] : [
     [t('waiting_you'), list.filter(a => a.status === 'with_director')],
     [t('in_progress'), list.filter(a => early.includes(a.status))],
@@ -306,9 +332,12 @@ function Asks({ t, lang, profile, refd, show }) {
     {!head && <Board t={t} lang={lang} profile={profile} refd={refd} list={list} />}
     {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(sums.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(sums.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(sums.capex + sums.opex)}</b></div></div>}
     {groups.map(([label, items], gi) => items.length > 0 && <div key={gi}>
-      {label && <p className="k" style={{ marginTop: 18 }}>{label} · {items.length}</p>}
+      {label && <div className="grp-h"><p className="k">{label} · {items.length}</p>
+        {gi === 0 && items.length > 1 && <button className="btn p" data-help="review_one" onClick={() => goto({ ids: byDept(items).flatMap(([, as]) => as.map(a => a.id)), i: 0 })}>▶ {t('review_one')}</button>}</div>}
       {!label && <div style={{ height: 12 }} />}
-      {items.map(a => <AskRow key={a.id} a={a} t={t} lang={lang} onOpen={setEdit} showDept={!head} />)}
+      {head ? items.map(a => <AskRow key={a.id} a={a} t={t} lang={lang} onOpen={setEdit} />)
+        : byDept(items).map(([d, as]) => <div key={d?.id || 0} className="dep-grp"><p className="dep-h">{d ? d[lang === 'ar' ? 'name_ar' : 'name_en'] : '—'} <span className="m">· {as.length} · {fmt(as.reduce((s, a) => s + capex(a), 0))}</span></p>
+          {as.map(a => <AskRow key={a.id} a={a} t={t} lang={lang} onOpen={setEdit} />)}</div>)}
     </div>)}
   </>
 }

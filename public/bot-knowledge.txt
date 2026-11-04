@@ -63,6 +63,7 @@ A: Your department, your director and the admin. The room sees a card only after
 - Budget (all year): Your live budget: how much each department has, has spent, has promised and has left. It is not just for Budget 2027; it follows you all year. How: Pick the year at the top, then open a department to see its lines.
 - Outputs: The Excel for finance: every card with its CAPEX, running costs and links, ready to send. How: Tap "Download Excel".
 - People: Who uses the platform and their role: head, director, room member, admin. How: Add a person, then send the sign-in link.
+- Review one by one: Opens the cards waiting for you, one after the other, department by department. After you send one to the room or back to the head, the next one opens by itself. How: Press Skip to leave a card for later, or Stop to go back to the list.
 - New card: Starts an empty card. It saves itself as a draft while you type, so nothing is lost if you are called away. How: Give it a one-line title first; the rest can come later.
 - The five steps: The card is split into five short pages: the goal, the money, the return, what happens if it is not funded, and a final check. A ✓ means the step has what it needs. How: Tap any step to jump to it. Nothing is sent until the last step.
 - Title: One line that tells anyone what this is. Good titles name the thing, not the problem. How: Example: "Electric forklift with drum clamp, building 2".
@@ -161,6 +162,7 @@ A: قسمك، ومديرك، والأدمن. والغرفة بتشوف الكا�
 - الميزانية (طول السنة): ميزانيتك لايف: كل قسم عنده كام، صرف كام، متوعد بكام، وفاضله كام. مش لميزانية 2027 بس، معاك طول السنة. How: اختار السنة من فوق، وافتح القسم تشوف بنوده.
 - المخرجات: إكسل المالية: كل كارت بالـCAPEX والتكلفة السنوية والربط، جاهز يتبعت. How: دوس "نزّل إكسل".
 - الناس: مين بيستخدم المنصة ودوره: رئيس قسم، مدير، لجنة، أدمن. How: ضيف الشخص وابعتله لينك الدخول.
+- راجعهم واحد واحد: بيفتحلك الكروت اللي مستنياك ورا بعض، قسم قسم. أول ما تبعت كارت للغرفة أو ترجّعه لرئيس القسم، اللي بعده بيفتح لوحده. How: دوس فوّت لو عايز تسيب كارت لبعدين، أو وقّف عشان ترجع للقائمة.
 - كارت جديد: بيفتح كارت فاضي. بيتحفظ لوحده كمسودة وإنت بتكتب، فلو حد ندهلك مفيش حاجة هتضيع. How: اكتب العنوان في سطر الأول، والباقي بعدين.
 - الخمس خطوات: الكارت متقسم خمس صفحات قصيرة: الهدف، الفلوس، العائد، لو اتأجل، والمراجعة. علامة ✓ يعني الخطوة كاملة. How: دوس على أي خطوة تروحلها. مفيش حاجة بتتبعت غير من آخر خطوة.
 - العنوان: سطر واحد يفهّم أي حد ده إيه. العنوان الكويس بيسمّي الحاجة نفسها مش المشكلة. How: مثال: "فوركليفت كهربائي بقلّاب براميل، مبنى ٢".
