@@ -26,6 +26,7 @@ export default function App() {
   const [lang, setLang] = useState(localStorage.getItem('sb_lang') || 'en')
   const t = useCallback((k) => T(lang, k), [lang])
   const [welcome, setWelcome] = useState(location.hash === '#welcome')
+  const [tick, setTick] = useState(0)
   const [guide, setGuide] = useState(location.hash === '#guide')
   // sign-in links land on #confirm…&token_hash=…: a person presses one button to sign in, so Outlook's link scanner cannot use the link up first
   const [confirm] = useState(() => { const h = new URLSearchParams(location.hash.slice(1)); return h.get('token_hash') ? { token_hash: h.get('token_hash'), type: h.get('type') || 'email' } : null })
@@ -41,14 +42,22 @@ export default function App() {
   useEffect(() => {
     if (!session) { setProfile(null); return }
     supabase.from('profiles').select('*, departments(*), directorates(*)').eq('user_id', session.user.id).maybeSingle().then(({ data }) => { setProfile(data); if (data && !data.last_seen_at) { try { sessionStorage.removeItem('sb_intro') } catch { /* private mode */ } setWelcome(true) } if (data && !data.last_seen_at) supabase.from('profiles').update({ last_seen_at: new Date().toISOString() }).eq('id', data.id).then(() => {}) })
-  }, [session])
+  }, [session, tick])
+  // a pending person waits for Tee to give them a role: look again when they come back to the tab, and every 20 s
+  const waiting = profile?.role === 'pending'
+  useEffect(() => {
+    if (!waiting) return
+    const again = () => { if (!document.hidden) setTick(x => x + 1) }
+    const id = setInterval(again, 20000); document.addEventListener('visibilitychange', again); window.addEventListener('focus', again)
+    return () => { clearInterval(id); document.removeEventListener('visibilitychange', again); window.removeEventListener('focus', again) }
+  }, [waiting])
 
   if (session === undefined) return null
   if (confirm && !session) return <Confirm t={t} lang={lang} setLang={setLang} confirm={confirm} />
   if (guide) return <Guide t={t} lang={lang} setLang={setLang} onBack={() => { history.replaceState(null, '', ' '); setGuide(false) }} />
   if (!session || welcome) return <Login t={t} lang={lang} setLang={setLang} expired={expired} preview={!!session} onBack={() => { history.replaceState(null, '', ' '); setWelcome(false) }} />
   if (!profile) return <Shell t={t} lang={lang} setLang={setLang} profile={null}><div className="wrap"><div className="card">…</div></div></Shell>
-  if (profile.role === 'pending') return <Shell t={t} lang={lang} setLang={setLang} profile={profile}><div className="wrap"><div className="card o"><h2>{t('pending_title')}</h2><p>{t('pending_text')}</p><p className="m">{profile.email}</p></div></div></Shell>
+  if (profile.role === 'pending') return <Shell t={t} lang={lang} setLang={setLang} profile={profile}><div className="wrap"><div className="card o"><h2>{t('pending_title')}</h2><p>{t('pending_text')}</p><p className="m">{profile.email}</p><div className="btns"><button className="btn p" onClick={() => setTick(x => x + 1)}>↻ {t('pending_again')}</button></div></div></div></Shell>
   return <Main t={t} lang={lang} setLang={setLang} profile={profile} />
 }
 
