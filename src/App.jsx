@@ -480,6 +480,20 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const authoring = canEdit && ['draft', 'returned', 'yellow'].includes(st) && !(isDir && st === 'with_director')
   const [step, setStep] = useState(authoring ? 0 : 4)
   const [note, setNote] = useState('')
+  const [moveTo, setMoveTo] = useState(null); const [moveNote, setMoveNote] = useState('')
+  // director or admin: the card belongs to another department (a pump is blending's, a sealing machine is filling's).
+  // It goes to that department's head as "sent back", with a note, so they own it from here.
+  const nmOf = (id) => refd.departments.find(d => d.id === id)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''
+  const moveDeps = (profile.role === 'admin' ? refd.departments : myDeps(profile, refd)).filter(d => d.id !== a.department_id)
+  const move = async () => {
+    if (!moveTo || busy) return; setBusy(true)
+    const from = a.department_id, why = moveNote.trim()
+    const msg = `${t('moved_from')} ${nmOf(from)}${why ? ': ' + why : ''}`
+    const { error } = await supabase.from('asks').update({ department_id: moveTo, status: 'returned', director_note: msg, budget_line_id: null }).eq('id', a.id)
+    if (error) { setBusy(false); show(error.message); return }
+    await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'moved', detail: { from: nmOf(from), to: nmOf(moveTo), note: why || undefined } })
+    setBusy(false); show('✓ ' + t('moved_ok') + ' ' + nmOf(moveTo)); onDone()
+  }
   useEffect(() => {
     if (!a.id) return
     supabase.from('attachments').select('*').eq('ask_id', a.id).then(({ data }) => setFiles(data || []))
@@ -634,6 +648,10 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       <div className="card"><div className="rh"><p className="k">{t('step_ifnot')}</p>{canEdit && <button className="btn ghost" onClick={() => go(3)}>{t('edit')}</button>}</div>
         <R label={t('ifnot_h')} v={a.if_not_funded} /><R label={t('stop_h')} v={a.what_we_stop} /></div>
       {canEdit && isDir && a.id && st === 'with_director' && <div className="card"><label className="f"><span>{t('send_back')}</span><textarea value={note} onChange={e => setNote(e.target.value)} /></label></div>}
+      {canEdit && isDir && a.id && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && moveDeps.length > 0 && <div className="card move" data-help="move_ask"><p className="k">{lang === 'ar' ? '↩' : '↪'} {t('move_title')}</p><p className="m" style={{ marginTop: -4 }}>{t('move_hint')}</p>
+        <div className="grid2" style={{ marginTop: 6 }}><label className="f"><span>{t('move_to')}</span><DeptSelect value={moveTo} onChange={setMoveTo} deps={moveDeps} refd={refd} lang={lang} blank /></label>
+          <label className="f"><span>{t('move_why')}</span><input value={moveNote} onChange={e => setMoveNote(e.target.value)} placeholder={t('move_why_ph')} /></label></div>
+        <div className="btns" style={{ marginTop: 4 }}><button className="btn y" disabled={!moveTo || busy} onClick={move}>{lang === 'ar' ? '↩' : '↪'} {t('move_btn')}{moveTo ? ' ' + nmOf(moveTo) : ''}</button></div></div>}
     </>}
 
     {canEdit && <div className="btns">
@@ -647,7 +665,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       {step === 4 && a.id && st === 'submitted' && <button className="btn ghost" onClick={withdraw}>{t('withdraw')}</button>}
     </div>}
     {!canEdit && step < 4 && <div className="btns">{step > 0 && <button className="btn" onClick={() => go(step - 1)}>{BK} {t('back_step')}</button>}<button className="btn p" onClick={() => go(step + 1)}>{t('next')} {NX}</button></div>}
-    {step === 4 && hist.length > 0 && <div className="card hist"><p className="k">{t('history')}</p>{hist.map(h => <div key={h.id}>{new Date(h.at).toLocaleString()} · {h.detail?.status ? t(h.detail.status) : h.event}{h.detail?.note ? ' — ' + h.detail.note : ''} · {h.profiles?.name || h.profiles?.email || ''}</div>)}</div>}
+    {step === 4 && hist.length > 0 && <div className="card hist"><p className="k">{t('history')}</p>{hist.map(h => <div key={h.id}>{new Date(h.at).toLocaleString()} · {h.event === 'moved' ? `↪ ${t('moved')}: ${h.detail?.from} → ${h.detail?.to}` : h.detail?.status ? t(h.detail.status) : h.event}{h.detail?.note ? ' — ' + h.detail.note : ''} · {h.profiles?.name || h.profiles?.email || ''}</div>)}</div>}
   </>
 }
 

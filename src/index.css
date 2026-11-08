@@ -451,3 +451,4 @@ html[data-theme=arena] .board tr.grp td{background:rgba(212,175,55,.08);border-t
 html[data-theme=arena] .board tr.grp:hover td{background:rgba(212,175,55,.14)}
 html[data-theme=arena] .dep-h{color:#E9D9A6}
 html[data-theme=arena] .review-bar{background:linear-gradient(180deg,#1A222B,#121920);border-color:rgba(212,175,55,.45);color:#F2E6C0}
+.card.move input{width:100%;box-sizing:border-box}
