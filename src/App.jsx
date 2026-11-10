@@ -563,6 +563,8 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const del = async () => { if (!a.id || !confirm('?')) return; await supabase.from('asks').delete().eq('id', a.id); onDone() }
   const withdraw = async () => { if (!confirm('?')) return; await supabase.from('asks').update({ status: 'withdrawn' }).eq('id', a.id); await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'withdrawn' }); onDone() }
   const oy = opexYear(a), cx = a.quote_decides ? 0 : capex(a)
+  // the same amount typed as CAPEX and again as a yearly cost (Mohamed Hamed's pH meter: 40,000 + 40,000)
+  const twice = cx > 0 && (oy === cx || (a.opex_items || []).some(x => itemYear(x) === cx))
   const regLabel = r => (r.code === 'ENGINE' ? '' : r.code + ' · ') + (lang === 'ar' && r.title_ar ? r.title_ar : r.title_en)
   const linked = refd.register.find(r => r.code === a.register_code)
   const hints = linked ? [] : matchRegister(refd.register, [a.lane_other, a.title, a.what_text].join(' '))
@@ -622,6 +624,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       <div className="card o"><p className="k">{t('s_tcd')}</p><p className="m">{t('tcd_hint')}</p>
         <OpexItems t={t} lang={lang} a={a} setA={setA} dirty={dirty} canEdit={canEdit} />
         {F({ k: 'opex_notes', label: t('opex_notes'), area: true })}
+        {twice && <div className="card o warn">⚠️ {t('twice_warn').replace('{n}', fmt(cx))}</div>}
         <div className="tot"><div><span>{t('capex_lbl')}</span><b>{a.quote_decides ? '—' : fmt(cx)}</b></div><div className="o"><span>{t('opex_lbl')}</span><b>{fmt(oy)}</b></div><div><span>{t('year_one')} · {t('yearly_after')}</span><b>{fmt(cx + oy)} · {fmt(oy)}</b></div></div>
       </div>
     </>}
@@ -643,6 +646,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       <div className="card"><div className="rh"><p className="k">{t('step_money')}</p>{canEdit && <button className="btn ghost" onClick={() => go(1)}>{t('edit')}</button>}</div>
         <R label={t('capex_amount')} v={a.quote_decides ? t('quote_decides') : cx ? `${fmt(cx)} ${t('egp')} (${approx(lang, cx)})` : ''} /><R label={t('quarter')} v={a.quarter} />
         <R label={t('opex_lbl')} v={oy ? `${fmt(oy)} ${t('egp')}` : ''} /><R label={t('year_one')} v={`${fmt(cx + oy)} ${t('egp')}`} />{files.length > 0 && <R label={t('quote')} v={files.map(f => f.name).join(', ')} />}</div>
+      {twice && <div className="card o warn">⚠️ {t('twice_warn').replace('{n}', fmt(cx))} <button className="btn ghost sm" onClick={() => go(1)}>{t('edit')}</button></div>}
       <div className="card"><div className="rh"><p className="k">{t('step_return')}</p>{canEdit && <button className="btn ghost" onClick={() => go(2)}>{t('edit')}</button>}</div>
         <R label={t('s_return')} v={[a.return_text, a.return_when].filter(Boolean).join(' · ')} /><R label={t('s_measure')} v={[a.measure_text, a.measure_when].filter(Boolean).join(' · ')} /></div>
       <div className="card"><div className="rh"><p className="k">{t('step_ifnot')}</p>{canEdit && <button className="btn ghost" onClick={() => go(3)}>{t('edit')}</button>}</div>
