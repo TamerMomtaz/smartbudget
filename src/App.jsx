@@ -275,7 +275,7 @@ function AskRow({ a, t, lang, onOpen, showDept }) {
 
 // one row per department in the director's scope, grouped by directorate (own directorate first, open).
 // Other directorates start folded into one summary line; a click opens them.
-function Board({ t, lang, profile, refd, list }) {
+function Board({ t, lang, profile, refd, list, pick, onPick }) {
   const [heads, setHeads] = useState([])
   useEffect(() => { supabase.from('profiles').select('name,email,department_id,last_seen_at').eq('role', 'head').then(({ data }) => setHeads(data || [])) }, [])
   const nm = (x) => x?.[lang === 'ar' ? 'name_ar' : 'name_en']
@@ -301,7 +301,7 @@ function Board({ t, lang, profile, refd, list }) {
         {many && <tr className="grp" onClick={() => flip(g.id)}><td colSpan={2}><b>{on ? '▾' : lang === 'ar' ? '◂' : '▸'} {nm(g)}</b> <span className="m">· {rs.length} {t(rs.length === 1 ? 'board_dep' : 'board_deps')}</span></td>
           {n ? <><td>{cell(sum(rs, 'draft'), 'draft')}</td><td>{cell(sum(rs, 'you'), 'with_director')}</td><td>{cell(sum(rs, 'room'), 'submitted')}</td></> : <td colSpan={3}><span className="m">{t('board_not_started')}</span></td>}
           <td>{c ? <b>{fmt(c)}</b> : ''}</td></tr>}
-        {on && rs.map(r => <tr key={r.d.id} className={r.n ? '' : 'idle'}><td><b>{nm(r.d)}</b></td>
+        {on && rs.map(r => <tr key={r.d.id} className={(r.n ? '' : 'idle') + ' pickable' + (pick === r.d.id ? ' picked' : '')} title={t('board_pick')} onClick={() => onPick(pick === r.d.id ? null : r.d.id)}><td><b>{nm(r.d)}</b></td>
           <td>{r.head ? (r.head.name || r.head.email.split('@')[0]) : '—'}{r.head && !r.head.last_seen_at && <span className="m"> · {t('invite')}?</span>}</td>
           {r.n ? <><td>{cell(r.draft, 'draft')}</td><td>{cell(r.you, 'with_director')}</td><td>{cell(r.room, 'submitted')}</td></> : <td colSpan={3}><span className="pill draft">{t('board_not_started')}</span></td>}
           <td style={{ minWidth: 140 }}>{r.capex ? <><div>{fmt(r.capex)}</div><div className="bar"><i style={{ width: (100 * r.capex / max) + '%' }} /></div></> : ''}</td></tr>)}
@@ -312,12 +312,12 @@ function Board({ t, lang, profile, refd, list }) {
 function Asks({ t, lang, profile, refd, show }) {
   const [list, setList] = useState([]); const [edit, setEdit] = useState(null)
   const [queue, setQueue] = useState(null) // review one by one: { ids, i }
+  const [pick, setPick] = useState(null) // a department clicked in the board: show only its cards
   const load = useCallback(async () => {
     const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar,directorate_id)').eq('cycle_id', refd.cycle.id).neq('status', 'withdrawn').order('created_at')
     setList(data || [])
   }, [refd.cycle.id])
   useEffect(() => { load() }, [load])
-  const sums = list.reduce((s, a) => ({ capex: s.capex + capex(a), opex: s.opex + opexYear(a) }), { capex: 0, opex: 0 })
   const goto = (q) => { if (!q || q.i >= q.ids.length) { setQueue(null); setEdit(null); if (q) show(t('review_done')); load(); return } const a = list.find(x => x.id === q.ids[q.i]); if (!a) return goto({ ...q, i: q.i + 1 }); setQueue(q); setEdit(a) }
   if (edit) return <>
     {queue && <div className="review-bar"><b>▶ {t('review_one')}</b><span className="pill">{queue.i + 1} / {queue.ids.length}</span>
@@ -329,17 +329,20 @@ function Asks({ t, lang, profile, refd, show }) {
   const early = ['draft', 'returned']
   const byDept = (items) => refd.departments.map(d => [d, items.filter(a => a.department_id === d.id)]).filter(([, as]) => as.length)
     .concat(items.some(a => !refd.departments.find(d => d.id === a.department_id)) ? [[null, items.filter(a => !refd.departments.find(d => d.id === a.department_id))]] : [])
+  const shown = pick ? list.filter(a => a.department_id === pick) : list
+  const ss = shown.reduce((s, a) => ({ capex: s.capex + capex(a), opex: s.opex + opexYear(a) }), { capex: 0, opex: 0 })
   const groups = head ? [[null, list]] : [
-    [t('waiting_you'), list.filter(a => a.status === 'with_director')],
-    [t('in_progress'), list.filter(a => early.includes(a.status))],
-    [t('in_room_lbl'), list.filter(a => !early.includes(a.status) && a.status !== 'with_director')],
+    [t('waiting_you'), shown.filter(a => a.status === 'with_director')],
+    [t('in_progress'), shown.filter(a => early.includes(a.status))],
+    [t('in_room_lbl'), shown.filter(a => !early.includes(a.status) && a.status !== 'with_director')],
   ]
   return <>
     <div className="hero"><p className="k">{refd.cycle.name}{!head && (profile.directorates || profile.departments) ? ' · ' + (profile.directorates || profile.departments)[lang === 'ar' ? 'name_ar' : 'name_en'] : ''}</p><h2>{head ? t('nav_asks') : t('all_asks')}</h2>
       <p className="m">{list.length === 0 ? t('no_asks') : head ? t('flow_head') : t('flow_dir')}</p>
       <div className="btns"><button className="btn p" data-help="new_ask" onClick={() => setEdit({})}>＋ {t('new_ask')}</button></div></div>
-    {!head && <Board t={t} lang={lang} profile={profile} refd={refd} list={list} />}
-    {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(sums.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(sums.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(sums.capex + sums.opex)}</b></div></div>}
+    {!head && <Board t={t} lang={lang} profile={profile} refd={refd} list={list} pick={pick} onPick={(id) => { setPick(id); if (id) setTimeout(() => document.querySelector('.pick-bar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50) }} />}
+    {!head && pick && <div className="pick-bar"><span>{t('board_showing')} <b>{refd.departments.find(d => d.id === pick)?.[lang === 'ar' ? 'name_ar' : 'name_en']}</b> · {shown.length}</span><button className="btn" onClick={() => setPick(null)}>✕ {t('board_show_all')}</button></div>}
+    {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(ss.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(ss.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(ss.capex + ss.opex)}</b></div></div>}
     {groups.map(([label, items], gi) => items.length > 0 && <div key={gi}>
       {label && <div className="grp-h"><p className="k">{label} · {items.length}</p>
         {gi === 0 && items.length > 1 && <button className="btn p" data-help="review_one" onClick={() => goto({ ids: byDept(items).flatMap(([, as]) => as.map(a => a.id)), i: 0 })}>▶ {t('review_one')}</button>}</div>}
