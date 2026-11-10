@@ -567,7 +567,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const withdraw = async () => { if (!confirm('?')) return; await supabase.from('asks').update({ status: 'withdrawn' }).eq('id', a.id); await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'withdrawn' }); onDone() }
   const oy = opexYear(a), cx = a.quote_decides ? 0 : capex(a)
   // the same amount typed as CAPEX and again as a yearly cost (Mohamed Hamed's pH meter: 40,000 + 40,000)
-  const twice = cx > 0 && (oy === cx || (a.opex_items || []).some(x => itemYear(x) === cx))
+  const twice = cx > 0 && (oy === cx || (a.opex_items || []).some(x => itemYear(x) === cx || (x.kind === 'tools' && N(x.price) === cx)))
   const regLabel = r => (r.code === 'ENGINE' ? '' : r.code + ' · ') + (lang === 'ar' && r.title_ar ? r.title_ar : r.title_en)
   const linked = refd.register.find(r => r.code === a.register_code)
   const hints = linked ? [] : matchRegister(refd.register, [a.lane_other, a.title, a.what_text].join(' '))
