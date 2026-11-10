@@ -269,7 +269,7 @@ function DeptSelect({ value, onChange, deps, refd, lang, disabled, blank }) {
 function AskRow({ a, t, lang, onOpen, showDept }) {
   return <div className="card ask" onClick={() => onOpen(a)}>
     <div style={{ flex: 1 }}><div className="t">{a.title}</div><div className="sub">{showDept ? (a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en'] + ' · ') : ''}{a.register_code || a.lane_other || ''} {a.quarter ? '· ' + a.quarter : ''}</div><span className={'pill ' + a.status}>{t(a.status)}</span></div>
-    <div className="amt"><b>{a.quote_decides ? t('quote_decides').split('—')[0] : fmt(capex(a))}</b><span className="m">{t('opex_lbl')} {fmt(opexYear(a))}</span></div>
+    <div className="amt"><span className="m">{t('capex_lbl')}</span><b>{a.quote_decides ? t('quote_decides').split('—')[0] : fmt(capex(a))}</b><span className="m">{t('opex_lbl')} {fmt(opexYear(a))}</span></div>
   </div>
 }
 
