@@ -12,6 +12,8 @@ const num = (v) => { if (typeof v === 'number') return v; const n = Number(Strin
 const r2 = (n) => Math.round(n * 100) / 100
 const low = (v) => String(v ?? '').trim().toLowerCase()
 const txt = (v) => String(v ?? '').replace(/\s+/g, ' ').trim()
+// finance's own text, kept letter for letter (only the ends are trimmed), so a line can be matched back to their ledger
+const raw = (v) => String(v ?? '').trim()
 
 function headerRow(aoa) {
   for (let i = 0; i < Math.min(aoa.length, 12); i++) {
@@ -46,7 +48,7 @@ export function readWorkbook(buf, fileName = '') {
         const [, code, cc] = String(row[gi]).match(GLRX)
         const monthly = iMon.every(x => x >= 0) ? iMon.map(x => r2(num(row[x]))) : null
         const budget = iBud >= 0 ? r2(num(row[iBud])) : monthly ? r2(monthly.reduce((s, x) => s + x, 0)) : 0
-        lines.push({ kind: 'gl', gl: `${code}-${txt(cc)}`, code, cc: txt(cc), owner: (iOwner >= 0 && txt(row[iOwner])) || tabOwner || txt(cc), ownerSet: iOwner >= 0 && !!txt(row[iOwner]), name: txt(row[iName]), budget, actual: iAct >= 0 ? r2(num(row[iAct])) : null, monthly })
+        lines.push({ kind: 'gl', gl: `${code}-${raw(cc)}`, code, cc: raw(cc), owner: (iOwner >= 0 && txt(row[iOwner])) || tabOwner || txt(cc), ownerSet: iOwner >= 0 && !!txt(row[iOwner]), name: raw(row[iName]), budget, actual: iAct >= 0 ? r2(num(row[iAct])) : null, monthly })
       }
       // rows with the owner left blank belong to the sheet's usual owner (the plan tab leaves it empty after row 4)
       if (iOwner >= 0) { const cnt = {}; lines.forEach(l => { if (l.ownerSet) cnt[l.owner] = (cnt[l.owner] || 0) + 1 }); const top = Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])[0]; if (top) lines.forEach(l => { if (!l.ownerSet) l.owner = top }) }
