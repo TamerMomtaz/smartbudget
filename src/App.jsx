@@ -8,6 +8,7 @@ import { GUIDE } from './guide'
 import Budgootee from './Budgootee'
 import { RatifyCard, Rulebook, useRatifier } from './Ratifier'
 import { chime, soundOn, setSound } from './cinema'
+import GLs from './GLs'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
 const OPEX = ['opex_people', 'opex_training', 'opex_consumables', 'opex_maintenance', 'opex_licences', 'opex_other']
@@ -219,6 +220,7 @@ function Main({ t, lang, setLang, profile }) {
   const tabs = [
     ...(profile.role !== 'excom' ? [{ id: 'asks', label: t('nav_asks') }] : []),
     ...(inRoom ? [{ id: 'room', label: t('nav_room') }] : []),
+    { id: 'gls', label: t('nav_gls') },
     { id: 'budget', label: t('nav_budget') },
     ...(isStaff ? [{ id: 'out', label: t('nav_outputs') }] : []),
     ...(profile.role === 'admin' ? [{ id: 'people', label: t('nav_people') }, { id: 'ideas', label: t('nav_ideas') }] : []),
@@ -242,6 +244,7 @@ function Main({ t, lang, setLang, profile }) {
     <div className={'wrap' + (tab === 'people' ? ' wide' : '')}>
       {tab === 'asks' && ref.cycle && <Asks t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'room' && ref.cycle && <Room t={t} lang={lang} profile={profile} refd={ref} show={show} />}
+      {tab === 'gls' && <GLs t={t} lang={lang} profile={profile} refd={ref} deps={profile.role === 'excom' ? ref.departments : myDeps(profile, ref)} show={show} />}
       {tab === 'budget' && <Budget t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'out' && ref.cycle && <Outputs t={t} lang={lang} profile={profile} refd={ref} />}
       {tab === 'people' && <People t={t} lang={lang} refd={ref} show={show} />}
