@@ -6,6 +6,7 @@ import { readWorkbook, notice, planToDate } from './finance'
 import { HELP } from './help'
 import { GUIDE } from './guide'
 import Budgootee from './Budgootee'
+import { RatifyCard, Rulebook, useRatifier } from './Ratifier'
 import { chime, soundOn, setSound } from './cinema'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
@@ -313,12 +314,14 @@ function Asks({ t, lang, profile, refd, show }) {
   const [list, setList] = useState([]); const [edit, setEdit] = useState(null)
   const [queue, setQueue] = useState(null) // review one by one: { ids, i }
   const [pick, setPick] = useState(null) // a department clicked in the board: show only its cards
+  const [book, setBook] = useState(false) // the director's rulebook and ownership map
   const load = useCallback(async () => {
     const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar,directorate_id)').eq('cycle_id', refd.cycle.id).neq('status', 'withdrawn').order('created_at')
     setList(data || [])
   }, [refd.cycle.id])
   useEffect(() => { load() }, [load])
   const goto = (q) => { if (!q || q.i >= q.ids.length) { setQueue(null); setEdit(null); if (q) show(t('review_done')); load(); return } const a = list.find(x => x.id === q.ids[q.i]); if (!a) return goto({ ...q, i: q.i + 1 }); setQueue(q); setEdit(a) }
+  if (book) return <Rulebook t={t} lang={lang} refd={refd} show={show} onBack={() => setBook(false)} />
   if (edit) return <>
     {queue && <div className="review-bar"><b>▶ {t('review_one')}</b><span className="pill">{queue.i + 1} / {queue.ids.length}</span>
       <button className="btn" onClick={() => goto({ ...queue, i: queue.i + 1 })}>{t('review_skip')} {lang === 'ar' ? '‹' : '›'}</button>
@@ -339,7 +342,7 @@ function Asks({ t, lang, profile, refd, show }) {
   return <>
     <div className="hero"><p className="k">{refd.cycle.name}{!head && (profile.directorates || profile.departments) ? ' · ' + (profile.directorates || profile.departments)[lang === 'ar' ? 'name_ar' : 'name_en'] : ''}</p><h2>{head ? t('nav_asks') : t('all_asks')}</h2>
       <p className="m">{list.length === 0 ? t('no_asks') : head ? t('flow_head') : t('flow_dir')}</p>
-      <div className="btns"><button className="btn p" data-help="new_ask" onClick={() => setEdit({})}>＋ {t('new_ask')}</button></div></div>
+      <div className="btns"><button className="btn p" data-help="new_ask" onClick={() => setEdit({})}>＋ {t('new_ask')}</button>{!head && <button className="btn" data-help="rulebook" onClick={() => setBook(true)}>📜 {t('rat_book')}</button>}</div></div>
     {!head && <Board t={t} lang={lang} profile={profile} refd={refd} list={list} pick={pick} onPick={(id) => { setPick(id); if (id) setTimeout(() => document.querySelector('.pick-bar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50) }} />}
     {!head && pick && <div className="pick-bar"><span>{t('board_showing')} <b>{refd.departments.find(d => d.id === pick)?.[lang === 'ar' ? 'name_ar' : 'name_en']}</b> · {shown.length}</span><button className="btn" onClick={() => setPick(null)}>✕ {t('board_show_all')}</button></div>}
     {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(ss.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(ss.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(ss.capex + ss.opex)}</b></div></div>}
@@ -484,6 +487,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const [step, setStep] = useState(authoring ? 0 : 4)
   const [note, setNote] = useState('')
   const [moveTo, setMoveTo] = useState(null); const [moveNote, setMoveNote] = useState('')
+  const ratReady = useRatifier(profile.role === 'director' || profile.role === 'admin')
   // director or admin: the card belongs to another department (a pump is blending's, a sealing machine is filling's).
   // It goes to that department's head as "sent back", with a note, so they own it from here.
   const nmOf = (id) => refd.departments.find(d => d.id === id)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''
@@ -579,6 +583,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const F = (p) => <Field a={a} set={set} canEdit={canEdit} t={t} {...p} />
   const go = (n) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const dep = refd.departments.find(d => d.id === a.department_id)
+  const canMove = canEdit && isDir && a.id && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && moveDeps.length > 0
   const R = ({ label, v }) => <div className="rv"><span>{label}</span><div>{v ? String(v) : <i className="m">—</i>}</div></div>
 
   return <>
@@ -643,6 +648,9 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       <div className={'card ' + (missing.length ? 'o' : 'g')}><h2 style={{ margin: 0 }}>{t('review_title')}</h2>
         {missing.length ? <><p>{t('review_missing')}</p><div className="btns" style={{ marginTop: 0 }}>{missing.map(([k, n]) => <button key={k} className="btn" onClick={() => go(n)}>{t(k)} {NX}</button>)}</div></> : <p style={{ marginBottom: 0 }}>{t('review_ok')}</p>}
       </div>
+      {isDir && a.id && ratReady && <RatifyCard t={t} lang={lang} ask={a} refd={refd} show={show} facts={{ opex_year: oy, twice, missing: missing.map(([k]) => t(k)) }}
+        onMove={canMove ? (id, why) => { setMoveTo(id); setMoveNote(String(why || '').slice(0, 300)); show(t('rat_move_ready')); setTimeout(() => document.querySelector('.card.move')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60) } : null}
+        onNote={canEdit && st === 'with_director' ? (txt) => { setNote(n => (n.trim() ? n.trim() + '\n' : '') + txt); show('✓'); setTimeout(() => document.querySelector('.card.sendback')?.scrollIntoView({ behavior: 'smooth', block: 'center' }), 60) } : null} />}
       <div className="card"><div className="rh"><p className="k">{t('step_goal')}</p>{canEdit && <button className="btn ghost" onClick={() => go(0)}>{t('edit')}</button>}</div>
         <R label={t('s_title')} v={a.title} />{dep && <R label={t('department')} v={dep[lang === 'ar' ? 'name_ar' : 'name_en']} />}
         <R label={t('s_other')} v={[a.lane_other, linked && t('linked_to') + ': ' + regLabel(linked)].filter(Boolean).join(' · ')} /><R label={t('s_what')} v={a.what_text} /><R label={t('gl_section')} v={gl ? glLabel(gl) : a.link_none && !linked ? t('none_review') : t('gl_new_money')} /></div>
@@ -654,8 +662,8 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
         <R label={t('s_return')} v={[a.return_text, a.return_when].filter(Boolean).join(' · ')} /><R label={t('s_measure')} v={[a.measure_text, a.measure_when].filter(Boolean).join(' · ')} /></div>
       <div className="card"><div className="rh"><p className="k">{t('step_ifnot')}</p>{canEdit && <button className="btn ghost" onClick={() => go(3)}>{t('edit')}</button>}</div>
         <R label={t('ifnot_h')} v={a.if_not_funded} /><R label={t('stop_h')} v={a.what_we_stop} /></div>
-      {canEdit && isDir && a.id && st === 'with_director' && <div className="card"><label className="f"><span>{t('send_back')}</span><textarea value={note} onChange={e => setNote(e.target.value)} /></label></div>}
-      {canEdit && isDir && a.id && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && moveDeps.length > 0 && <div className="card move" data-help="move_ask"><p className="k">{lang === 'ar' ? '↩' : '↪'} {t('move_title')}</p><p className="m" style={{ marginTop: -4 }}>{t('move_hint')}</p>
+      {canEdit && isDir && a.id && st === 'with_director' && <div className="card sendback"><label className="f"><span>{t('send_back')}</span><textarea value={note} onChange={e => setNote(e.target.value)} /></label></div>}
+      {canMove && <div className="card move" data-help="move_ask"><p className="k">{lang === 'ar' ? '↩' : '↪'} {t('move_title')}</p><p className="m" style={{ marginTop: -4 }}>{t('move_hint')}</p>
         <div className="grid2" style={{ marginTop: 6 }}><label className="f"><span>{t('move_to')}</span><DeptSelect value={moveTo} onChange={setMoveTo} deps={moveDeps} refd={refd} lang={lang} blank /></label>
           <label className="f"><span>{t('move_why')}</span><input value={moveNote} onChange={e => setMoveNote(e.target.value)} placeholder={t('move_why_ph')} /></label></div>
         <div className="btns" style={{ marginTop: 4 }}><button className="btn y" disabled={!moveTo || busy} onClick={move}>{lang === 'ar' ? '↩' : '↪'} {t('move_btn')}{moveTo ? ' ' + nmOf(moveTo) : ''}</button></div></div>}

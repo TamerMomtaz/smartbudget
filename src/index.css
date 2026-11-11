@@ -460,3 +460,32 @@ html[data-theme=arena] .review-bar{background:linear-gradient(180deg,#1A222B,#12
 html[data-theme=arena] .board tr.pickable:hover td{background:rgba(255,122,69,.10)}
 html[data-theme=arena] .board tr.picked td{background:rgba(255,122,69,.18) !important}
 html[data-theme=arena] .pick-bar{background:linear-gradient(180deg,#1A222B,#121920);border-color:rgba(212,175,55,.45);color:#F2E6C0}
+/* the ratifier */
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}
+@media (max-width:700px){.grid3{grid-template-columns:1fr}}
+.card.rat{border-inline-start:4px solid var(--amb)}
+.card.rat input{width:100%;box-sizing:border-box}
+.rat-sum{font-size:17px;font-weight:600;margin:4px 0 10px}
+.rat-own{padding:10px 12px;border-radius:10px;background:var(--nt);margin-bottom:10px}
+.rat-own p{margin:6px 0}
+.rat-own.yes .pill{background:var(--gt);color:var(--grn)}
+.rat-own.other{background:var(--ot)}
+.rat-own.other .pill{background:var(--or);color:#fff}
+.rat-own.unsure .pill{background:var(--yt);color:var(--yel)}
+.rat-b{padding:8px 0;border-top:1px dashed var(--line)}
+.rat-b .k{margin:0 0 4px}
+.rat-b ul,.rat-b ol{margin:4px 0;padding-inline-start:22px}
+.rat-b li{margin:3px 0}
+.rat-fa{gap:16px}
+.rat-b.for .k{color:var(--grn)}
+.rat-b.against .k{color:var(--red)}
+.rat-teach{padding-top:10px;border-top:1px dashed var(--line)}
+.rat-err{color:var(--red)}
+.rat-foot{margin:8px 0 0;font-size:13px}
+.rule-row{display:flex;justify-content:space-between;align-items:flex-start;gap:12px;padding:10px 0;border-bottom:1px dashed var(--line)}
+.rule-row.offd b{opacity:.5;text-decoration:line-through}
+html[data-theme=arena] .card.rat{border-inline-start-color:var(--gold)}
+html[data-theme=arena] .rat-own{background:#1A2531}
+html[data-theme=arena] .rat-own.other{background:#2A1B11}
+html[data-theme=arena] .rat-b,html[data-theme=arena] .rat-teach,html[data-theme=arena] .rule-row{border-color:#26333F}
+.card.book input,.card.book select{width:100%;box-sizing:border-box}
