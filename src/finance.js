@@ -35,7 +35,10 @@ export function readWorkbook(buf, fileName = '') {
       const H = aoa[h.i].map(low), at = (f) => H.findIndex(f)
       const iOwner = at(x => x.startsWith('budget owner')), iName = at(x => x === 'name'), iAct = at(x => x === 'actual')
       const iBud = at(x => /^budget\b/.test(x) && x !== 'budget owner'), iMon = MONTHS.map(m => H.indexOf(m))
-      const year = yearIn(aoa[h.i][iBud]) || titleYear || fileYear
+      const year = yearIn(aoa[h.i][iBud]) || titleYear || fileYear || yearIn(name)
+      // finance's multi-tab files carry no "Budget owner" column: the tab itself is the owner (Lab, Maintenance, Production, QHSE, Admin),
+      // and the cost centre after the GL code can be another department's (the Maintenance tab holds "3404002-الإنتاج")
+      const tabOwner = iOwner < 0 && !/^(sheet|ورقة)\s*\d*$/i.test(txt(name)) ? txt(name) : ''
       const lines = []
       for (const row of aoa.slice(h.i + 1)) {
         const gi = row.findIndex(v => GLRX.test(String(v)))
@@ -43,7 +46,7 @@ export function readWorkbook(buf, fileName = '') {
         const [, code, cc] = String(row[gi]).match(GLRX)
         const monthly = iMon.every(x => x >= 0) ? iMon.map(x => r2(num(row[x]))) : null
         const budget = iBud >= 0 ? r2(num(row[iBud])) : monthly ? r2(monthly.reduce((s, x) => s + x, 0)) : 0
-        lines.push({ kind: 'gl', gl: `${code}-${txt(cc)}`, code, cc: txt(cc), owner: (iOwner >= 0 && txt(row[iOwner])) || txt(cc), ownerSet: iOwner >= 0 && !!txt(row[iOwner]), name: txt(row[iName]), budget, actual: iAct >= 0 ? r2(num(row[iAct])) : null, monthly })
+        lines.push({ kind: 'gl', gl: `${code}-${txt(cc)}`, code, cc: txt(cc), owner: (iOwner >= 0 && txt(row[iOwner])) || tabOwner || txt(cc), ownerSet: iOwner >= 0 && !!txt(row[iOwner]), name: txt(row[iName]), budget, actual: iAct >= 0 ? r2(num(row[iAct])) : null, monthly })
       }
       // rows with the owner left blank belong to the sheet's usual owner (the plan tab leaves it empty after row 4)
       if (iOwner >= 0) { const cnt = {}; lines.forEach(l => { if (l.ownerSet) cnt[l.owner] = (cnt[l.owner] || 0) + 1 }); const top = Object.keys(cnt).sort((x, y) => cnt[y] - cnt[x])[0]; if (top) lines.forEach(l => { if (!l.ownerSet) l.owner = top }) }

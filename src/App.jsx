@@ -808,7 +808,7 @@ function useBudget(year, depIds) {
 
 
 /* finance's own sheets, imported as they are (see finance.js) */
-const OWNER_ALIAS = { production: 'PRD', 'الإنتاج': 'PRD', prd: 'PRD', maintenance: 'MNT', 'الصيانة': 'MNT', lab: 'LAB', 'المعمل': 'LAB', qhse: 'HSE', hse: 'HSE', 'السلامة العامة والصحة المهنية': 'HSE', qc: 'QC', qms: 'QMS' }
+const OWNER_ALIAS = { production: 'PRD', 'الإنتاج': 'PRD', prd: 'PRD', maintenance: 'MNT', 'الصيانة': 'MNT', lab: 'LAB', 'المعمل': 'LAB', qhse: 'HSE', hse: 'HSE', 'السلامة العامة والصحة المهنية': 'HSE', qc: 'QC', qms: 'QMS', admin: 'ADM', administration: 'ADM', 'الشئون الإدارية': 'ADM', 'الشؤون الإدارية': 'ADM', factory: 'PRD', plant: 'PRD' }
 function FinanceImport({ t, lang, refd, profile, book, show, onClose, onDone }) {
   const nm = (x) => x?.[lang === 'ar' ? 'name_ar' : 'name_en']
   const owners = [...new Set(book.sheets.flatMap(s => (s.lines || []).map(l => l.owner)))]
@@ -822,6 +822,9 @@ function FinanceImport({ t, lang, refd, profile, book, show, onClose, onDone }) 
   })
   const [asOf, setAsOf] = useState(new Date().toISOString().slice(0, 10))
   const [busy, setBusy] = useState(false)
+  // a file with no year anywhere (finance's "factory 93"): the person says which year it is
+  const noYear = book.sheets.some(s => !s.year && (s.lines?.length || s.blocks?.length)); const [yr, setYr] = useState(new Date().getFullYear())
+  const yOf = (s) => s.year || Number(yr)
   const notes = notice(book)
   const kindLabel = { ytd: t('fi_kind_ytd'), plan: t('fi_kind_plan'), capex: t('fi_kind_capex'), detail: t('fi_kind_detail'), skip: t('fi_kind_skip') }
   const hasActuals = book.sheets.some(s => s.type === 'ytd')
@@ -829,37 +832,39 @@ function FinanceImport({ t, lang, refd, profile, book, show, onClose, onDone }) 
   const run = async () => {
     setBusy(true)
     try {
-      const years = [...new Set(book.sheets.map(s => s.year).filter(Boolean))]
+      const years = [...new Set(book.sheets.map(yOf).filter(Boolean))]
       const { data: ex0, error: e0 } = await supabase.from('budget_lines').select('*').in('fiscal_year', years.flatMap(y => [y - 1, y, y + 1])); if (e0) throw e0
       const ex = ex0 || []; let made = 0, changed = 0, acts = 0
       // budget vs actual first (it is finance's official number), then the monthly plan, then CAPEX
       const order = { ytd: 0, plan: 1, capex: 2 }
       for (const sh of book.sheets.filter(s => s.type in order).sort((a, b) => order[a.type] - order[b.type])) {
-        if (!sh.year) continue
+        const shYear = yOf(sh); if (!shYear) continue
+        // a monthly tab with no budget-vs-actual tab beside it is the only source of the line's yearly total
+        const planOnly = sh.type === 'plan' && !book.sheets.some(o => o.type === 'ytd' && yOf(o) === shYear)
         for (const l of sh.lines) {
           const dep = Number(map[l.owner]); if (!dep) continue
-          const same = (x) => x.fiscal_year === sh.year && x.department_id === dep
+          const same = (x) => x.fiscal_year === shYear && x.department_id === dep
           // a hand-typed line may hold just the code ("3404001") or the code with spaces; finance's file names the cost centre too
           let line = l.gl ? ex.find(x => same(x) && x.gl_code === l.gl) || ex.find(x => same(x) && x.kind !== 'capex' && String(x.gl_code || '').replace(/\s/g, '') === l.code) : ex.find(x => same(x) && x.kind === 'capex' && (x.name === l.name))
           if (line) {
-            const patch = sh.type === 'plan' ? { monthly: l.monthly } : sh.type === 'capex' ? { amount: l.budget, note: l.note } : { amount: l.budget, name: l.name }
+            const patch = sh.type === 'plan' ? { monthly: l.monthly, ...(planOnly ? { amount: l.budget, name: l.name } : {}) } : sh.type === 'capex' ? { amount: l.budget, note: l.note } : { amount: l.budget, name: l.name }
             if (l.gl && line.gl_code !== l.gl) patch.gl_code = l.gl
             const { error } = await supabase.from('budget_lines').update(patch).eq('id', line.id); if (error) throw error
             Object.assign(line, patch); changed++
           } else {
-            const { data, error } = await supabase.from('budget_lines').insert({ fiscal_year: sh.year, department_id: dep, kind: l.kind, gl_code: l.gl, name: l.name, amount: l.budget, monthly: l.monthly, note: l.note || null, created_by: profile.id }).select().single(); if (error) throw error
+            const { data, error } = await supabase.from('budget_lines').insert({ fiscal_year: shYear, department_id: dep, kind: l.kind, gl_code: l.gl, name: l.name, amount: l.budget, monthly: l.monthly, note: l.note || null, created_by: profile.id }).select().single(); if (error) throw error
             ex.push(data); line = data; made++
           }
           if (sh.type === 'ytd' && l.actual != null) {
             // year-to-date totals: the new snapshot replaces the old one, or it would count twice
             const { error: de } = await supabase.from('spend_actuals').delete().eq('budget_line_id', line.id).eq('source', 'ax'); if (de) throw de
-            if (l.actual) { const { error } = await supabase.from('spend_actuals').insert({ fiscal_year: sh.year, department_id: dep, budget_line_id: line.id, gl_code: l.gl, amount: l.actual, period: asOf, as_of: asOf, description: 'Finance YTD', source: 'ax', source_file: book.fileName, uploaded_by: profile.id }); if (error) throw error; acts++ }
+            if (l.actual) { const { error } = await supabase.from('spend_actuals').insert({ fiscal_year: shYear, department_id: dep, budget_line_id: line.id, gl_code: l.gl, amount: l.actual, period: asOf, as_of: asOf, description: 'Finance YTD', source: 'ax', source_file: book.fileName, uploaded_by: profile.id }); if (error) throw error; acts++ }
           }
         }
       }
       // breakdown tabs: hang each block on the line with the same GL that year
       for (const sh of book.sheets.filter(s => s.type === 'detail')) for (const b of sh.blocks) {
-        for (const line of ex.filter(x => x.gl_code === b.gl && x.fiscal_year === sh.year)) {
+        for (const line of ex.filter(x => x.gl_code === b.gl && x.fiscal_year === yOf(sh))) {
           const details = [...(line.details || []).filter(g => g.sheet !== sh.name || g.file !== book.fileName), { file: book.fileName, sheet: sh.name, years: sh.yearCols, items: b.items }]
           const { error } = await supabase.from('budget_lines').update({ details }).eq('id', line.id); if (error) throw error
           line.details = details; changed++
@@ -880,7 +885,8 @@ function FinanceImport({ t, lang, refd, profile, book, show, onClose, onDone }) 
   return <div className="card n" style={{ marginTop: 12 }}>
     <div className="rh"><p className="k" style={{ margin: 0 }}>{t('fi_title')} · {book.fileName}</p><button className="btn ghost sm" onClick={onClose}>✕</button></div>
     <p className="m">{t('fi_hint')}</p>
-    <table className="tb"><tbody>{book.sheets.map(s => <tr key={s.name}><td>{t('fi_sheet')}: <b>{s.name}</b></td><td>{kindLabel[s.type]}</td><td>{s.year || '—'}</td><td className="m">{s.lines ? s.lines.length + ' ' + t('fi_lines_word') : s.blocks ? s.blocks.length + ' GL · ' + s.blocks.reduce((n, b) => n + b.items.length, 0) + ' ' + t('fi_items') : ''}</td></tr>)}</tbody></table>
+    <table className="tb"><tbody>{book.sheets.map(s => <tr key={s.name}><td>{t('fi_sheet')}: <b>{s.name}</b></td><td>{kindLabel[s.type]}</td><td>{s.year || (noYear ? yr : '—')}</td><td className="m">{s.lines ? s.lines.length + ' ' + t('fi_lines_word') : s.blocks ? s.blocks.length + ' GL · ' + s.blocks.reduce((n, b) => n + b.items.length, 0) + ' ' + t('fi_items') : ''}</td></tr>)}</tbody></table>
+    {noYear && <label className="f" style={{ maxWidth: 260, marginTop: 10 }}><span>{t('fi_year')}</span><select value={yr} onChange={e => setYr(e.target.value)}>{[-1, 0, 1].map(d => new Date().getFullYear() + d).map(y => <option key={y}>{y}</option>)}</select></label>}
     {owners.length > 0 && <><p className="k" style={{ marginTop: 12 }}>{t('fi_owner')}</p>
       {owners.map(o => <div key={o} className="row" style={{ alignItems: 'center' }}><div style={{ flex: 1 }}><b>{o}</b></div><div style={{ flex: 2 }}><select value={map[o]} onChange={e => setMap({ ...map, [o]: e.target.value })}><option value="">{t('fi_skip_owner')}</option>{refd.departments.map(d => <option key={d.id} value={d.id}>{d.code} · {nm(d)}</option>)}</select></div></div>)}</>}
     {hasActuals && <><label className="f" style={{ maxWidth: 260 }}><span>{t('fi_asof')}</span><input type="date" value={asOf} onChange={e => setAsOf(e.target.value)} /></label><p className="m">ℹ️ {t('fi_replace')}</p></>}
@@ -983,6 +989,20 @@ function Budget({ t, lang, profile, refd, show }) {
     const rows = kind === 'lines' ? [{ Department: 'PRD', 'GL code': '6101', 'GL name': 'Spare parts', Budget: 500000, 'Last year': 450000 }] : [{ Department: 'PRD', 'GL code': '6101', Date: `${year}-01-31`, Amount: 12500, Description: 'Bearings' }]
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), kind); XLSX.writeFile(wb, `smartBudget_${kind}_template.xlsx`)
   }
+  // the year's GL lines the way finance sends them: one tab per department, Ledger account | Name | Jan..Dec | Total
+  const financeOut = () => {
+    const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], wb = XLSX.utils.book_new()
+    deps.forEach(d => {
+      const ls = depLines(d.id); if (!ls.length) return
+      const rows = ls.map(l => [l.gl_code || '', l.name, ...(Array.isArray(l.monthly) && l.monthly.length === 12 ? l.monthly.map(Number) : Array(12).fill(null)), Number(l.amount) || 0])
+      const tot = ['Grand Total', '', ...M.map((_, i) => rows.reduce((s, r) => s + (Number(r[2 + i]) || 0), 0)), rows.reduce((s, r) => s + r[14], 0)]
+      const ws = XLSX.utils.aoa_to_sheet([['Ledger account', 'Name', ...M, 'Total'], ...rows, tot])
+      ws['!cols'] = [{ wch: 36 }, { wch: 46 }, ...M.map(() => ({ wch: 12 })), { wch: 14 }]
+      XLSX.utils.book_append_sheet(wb, ws, String(d.name_en).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31))
+    })
+    if (!wb.SheetNames.length) { show(t('fi_out_none')); return }
+    XLSX.writeFile(wb, `smartBudget_GL_${year}.xlsx`)
+  }
   const pending = reqs.filter(r => r.status === 'open')
   const glOptions = [...new Map([...cat.map(c => [c.code, c.name]), ...lines.filter(l => l.gl_code).map(l => [l.gl_code, l.name])]).entries()]
   const DepPick = ({ v, on }) => profile.role !== 'head' && <label className="f"><span>{t('department')}</span><DeptSelect value={v} onChange={on} deps={deps} refd={refd} lang={lang} blank /></label>
@@ -994,6 +1014,7 @@ function Budget({ t, lang, profile, refd, show }) {
         <button data-help="b_afford" className={'btn ' + (panel === 'afford' ? 'p' : '')} onClick={() => setPanel(panel === 'afford' ? null : 'afford')}>🧮 {t('b_afford')}</button>
         <button data-help="b_record" className={'btn ' + (panel === 'spend' ? 'p' : '')} onClick={() => setPanel(panel === 'spend' ? null : 'spend')}>🧾 {t('b_record')}</button>
         <button data-help="b_my_lines" className={'btn ' + (panel === 'lines' ? 'p' : '')} onClick={() => setPanel(panel === 'lines' ? null : 'lines')}>📒 {t('b_my_lines')}</button>
+        <button data-help="fi_out" className="btn" onClick={financeOut}>📥 {t('fi_out')}</button>
       </div>}</div>
 
     {panel === 'afford' && <div className="card" style={{ marginTop: 12 }}><p className="k">{t('b_afford')}</p>
