@@ -910,6 +910,24 @@ function Budget({ t, lang, profile, refd, show }) {
   const [sp, setSp] = useState({ dep: own, line: '', req: '', amount: '', date: new Date().toISOString().slice(0, 10), note: '' })
   const [open, setOpen] = useState({}); const [busy, setBusy] = useState(false); const [panel, setPanel] = useState(null)
   const [book, setBook] = useState(null); const [why, setWhy] = useState({})
+  // last year's GL lines: the starting point for this year, and the base of finance's ceiling (15% is normal, 20% is the most)
+  const [prev, setPrev] = useState([])
+  useEffect(() => { supabase.from('budget_lines').select('department_id,gl_code,name,amount').eq('fiscal_year', year - 1).eq('kind', 'gl').then(({ data }) => setPrev(data || [])) }, [year])
+  const prevOf = (id) => prev.filter(x => x.department_id === id)
+  const baseOf = (l) => Number(l.last_year) || Number(prev.find(x => x.department_id === l.department_id && x.gl_code && x.gl_code === l.gl_code)?.amount) || 0
+  const Cap = ({ l }) => { const b = baseOf(l), a = Number(l.amount); if (!b || !a || year !== new Date().getFullYear() + 1 && !l.last_year) return null; const p = Math.round(1000 * (a - b) / b) / 10; if (Math.abs(p) < 0.05) return null
+    return <span className={'pill ' + (p > 20 ? 'gate' : p > 15 ? 'yellow' : 'green')} title={t('b_cap_rule')}>{p > 0 ? '+' : ''}{p}%{p > 20 ? ' · ' + t('b_cap_over') : ''}</span> }
+  const bringLast = async (id) => {
+    const have = new Set(lines.filter(l => l.department_id === id).map(l => l.gl_code)), rows = prevOf(id).filter(x => !have.has(x.gl_code)).map(x => ({ fiscal_year: year, department_id: id, kind: 'gl', gl_code: x.gl_code, name: x.name, amount: Number(x.amount), last_year: Number(x.amount), created_by: profile.id }))
+    if (!rows.length || !confirm(`${rows.length} ${t('b_lines')} → ${year}?`)) return
+    const { error } = await supabase.from('budget_lines').insert(rows); if (error) show(error.message); else { show('✓ ' + rows.length); setOpen(o => ({ ...o, [id]: true })); B.load() }
+  }
+  const editAmt = async (l) => {
+    const v = prompt(lineLabel(l) + '\n' + t('b_budget') + ' ' + year + (baseOf(l) ? '\n' + t('b_last_year') + ': ' + fmt(baseOf(l)) + ' · +15% = ' + fmt(Math.round(baseOf(l) * 1.15)) + ' · +20% = ' + fmt(Math.round(baseOf(l) * 1.2)) : ''), String(Number(l.amount)))
+    if (v === null) return; const a = toNum(v); if (!(a >= 0)) return
+    const old = Number(l.amount), monthly = Array.isArray(l.monthly) && l.monthly.length === 12 && old ? l.monthly.map(m => Math.round(100 * Number(m) * a / old) / 100) : l.monthly
+    const { error } = await supabase.from('budget_lines').update({ amount: a, monthly }).eq('id', l.id); if (error) show(error.message); else B.load()
+  }
   const upFinance = async (e) => { const f = e.target.files[0]; e.target.value = ''; if (!f) return; try { setBook(readWorkbook(await f.arrayBuffer(), f.name)) } catch (err) { show(err.message) } }
   const isAdmin = profile.role === 'admin', canDecide = isAdmin || profile.role === 'director', canWrite = profile.role !== 'excom'
   const deps = profile.role === 'excom' ? refd.departments : myDeps(profile, refd)
@@ -1053,7 +1071,7 @@ function Budget({ t, lang, profile, refd, show }) {
         <MoneyInput a={nl} set={(k, v) => setNl(x => ({ ...x, [k]: v }))} canEdit k="last_year" label={t('b_last_year')} lang={lang} t={t} />
         <div style={{ flex: 'none', alignSelf: 'end', marginBottom: 10 }}><button className="btn p" onClick={addLine}>＋ {t('b_add_line')}</button></div>
       </div>
-      {nl.amount && nl.last_year && Math.abs(Number(nl.amount) - Number(nl.last_year)) / Number(nl.last_year) > 0.1 && <p className="m">ℹ️ {Number(nl.amount) > Number(nl.last_year) ? t('b_up') : t('b_down')} {Math.round(100 * Math.abs(Number(nl.amount) - Number(nl.last_year)) / Number(nl.last_year))}% — {t('b_why_change')}</p>}
+      {nl.amount && nl.last_year && Math.abs(Number(nl.amount) - Number(nl.last_year)) / Number(nl.last_year) > 0.1 && <p className="m">{Number(nl.amount) > Number(nl.last_year) * 1.2 ? '⚠️' : 'ℹ️'} {Number(nl.amount) > Number(nl.last_year) ? t('b_up') : t('b_down')} {Math.round(100 * Math.abs(Number(nl.amount) - Number(nl.last_year)) / Number(nl.last_year))}% — {Number(nl.amount) > Number(nl.last_year) * 1.15 ? t('b_cap_rule') : t('b_why_change')}</p>}
     </div>}
 
     {canDecide && pending.length > 0 && <div className="card o" data-help="b_pending" style={{ marginTop: 12 }}><p className="k">{t('b_waiting')} · {pending.length}</p>
@@ -1065,12 +1083,13 @@ function Budget({ t, lang, profile, refd, show }) {
     </div>}
 
     {deps.map(d => { const n = B.dep(d.id); const ls = depLines(d.id); const rq = reqs.filter(r => r.department_id === d.id); const man = acts.filter(x => x.department_id === d.id && x.source === 'manual')
-      if (!ls.length && !rq.length && !man.length && profile.role !== 'head') return null
+      if (!ls.length && !rq.length && !man.length && !prevOf(d.id).length && profile.role !== 'head') return null
       return <div key={d.id} className="card" style={{ marginTop: 12 }}>
         <div className="rh"><h2 style={{ margin: 0 }}>{nm(d)}</h2><Flag n={n} /></div>
         <div className="tot four" data-help="b_tiles"><div><span>{t('b_budget')}</span><b>{fmt(n.budget)}</b></div><div><span>{t('b_spent')}</span><b>{fmt(n.spent)}</b></div><div className="o"><span>{t('b_committed')}</span><b>{fmt(n.promised)}</b></div><div className={n.left < 0 ? 'neg' : 'pos'}><span>{t('b_left')}</span><b>{fmt(n.left)}</b></div></div>
         {n.budget > 0 && <Bar n={n} />}<AxNote n={n} />
         {depCapex(d.id).length > 0 && <p className="m">🏗️ {t('b_capex_list')}: <b>{fmt(depCapex(d.id).reduce((s, l) => s + Number(l.amount), 0))}</b> · {depCapex(d.id).length} {t('fi_items')}</p>}
+        {canWrite && prevOf(d.id).some(x => !ls.some(l => l.gl_code === x.gl_code)) && <div className="btns" style={{ marginTop: 8 }}><button className="btn y" onClick={() => bringLast(d.id)}>⤵️ {t('b_bring')} {year - 1} ({prevOf(d.id).filter(x => !ls.some(l => l.gl_code === x.gl_code)).length})</button><span className="m">{t('b_cap_rule')}</span></div>}
         {ls.length === 0 && <p className="m">{t('b_no_lines')} {canWrite && <a href="#" onClick={e => { e.preventDefault(); setNl({ ...nl, dep: d.id }); setPanel('lines'); window.scrollTo({ top: 0, behavior: 'smooth' }) }}>{t('b_add_line')} →</a>}</p>}
         {(ls.length > 0 || rq.length > 0 || man.length > 0) && <button className="btn ghost" data-help="b_lines" style={{ marginTop: 8 }} onClick={() => setOpen({ ...open, [d.id]: !open[d.id] })}>{open[d.id] ? '▾' : '▸'} {t('b_details')}</button>}
         {open[d.id] && <>
@@ -1079,7 +1098,7 @@ function Budget({ t, lang, profile, refd, show }) {
               return <Fragment key={l.id}><tr><td>{l.gl_code ? <span className="m">{l.gl_code} · </span> : ''}{l.name}{l.locked && <span title={t('b_locked')}> 🔒</span>}<AxNote n={x} />
                 {l.note && <div className="m">{l.note}</div>}
                 {pn != null && <div className="m">{t('b_plan_now')}: {fmt(pn)}{x.spent > pn * 1.05 && <b className="gate"> · ⚠️ {t('b_ahead')}</b>}</div>}
-                {items.length > 0 && <button className="btn ghost sm" onClick={() => setWhy({ ...why, [l.id]: !why[l.id] })}>📋 {t('b_breakdown')} ({items.length})</button>}</td><td className="m">{l.last_year ? fmt(l.last_year) : ''}</td><td>{fmt(x.budget)}</td><td>{fmt(x.spent)}</td><td>{fmt(x.promised)}</td><td><b className={x.left < 0 ? 'gate' : ''}>{fmt(x.left)}</b></td>
+                {items.length > 0 && <button className="btn ghost sm" onClick={() => setWhy({ ...why, [l.id]: !why[l.id] })}>📋 {t('b_breakdown')} ({items.length})</button>}</td><td className="m">{baseOf(l) ? fmt(baseOf(l)) : ''}</td><td style={{ whiteSpace: 'nowrap' }}>{fmt(x.budget)} {!l.locked && canWrite && <button className="btn ghost sm" title={t('b_edit_amt')} onClick={() => editAmt(l)}>✏️</button>}<div><Cap l={l} /></div></td><td>{fmt(x.spent)}</td><td>{fmt(x.promised)}</td><td><b className={x.left < 0 ? 'gate' : ''}>{fmt(x.left)}</b></td>
               <td style={{ whiteSpace: 'nowrap' }}><Flag n={x} />{!l.locked && canWrite && <button className="btn ghost sm" onClick={() => delLine(l)}>✕</button>}{isAdmin && <button className="btn ghost sm" title={l.locked ? t('b_unlock') : t('b_lock')} onClick={() => lockLine(l, !l.locked)}>{l.locked ? '🔓' : '🔒'}</button>}</td></tr>
               {why[l.id] && (() => { const ys = [...new Set(items.flatMap(it => Object.keys(it.by)))].sort(); return <tr><td colSpan={7}><table className="tb sub"><tbody>{items.map((it, i) => <tr key={i}><td>{it.vendor}</td><td>{it.item}</td><td className="m">{it.price ? fmt(it.price) + (it.count ? ' × ' + it.count : '') : ''}</td>{ys.map(y => <td key={y}>{it.by[y] ? <><span className="m">{y} </span>{fmt(it.by[y])}</> : ''}</td>)}</tr>)}</tbody></table></td></tr> })()}</Fragment> })}
           </tbody></table></div>}
