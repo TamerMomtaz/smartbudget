@@ -1008,7 +1008,7 @@ function Budget({ t, lang, profile, refd, show }) {
     const wb = XLSX.utils.book_new(); XLSX.utils.book_append_sheet(wb, XLSX.utils.json_to_sheet(rows), kind); XLSX.writeFile(wb, `smartBudget_${kind}_template.xlsx`)
   }
   // the year's GL lines the way finance sends them: one tab per department, Ledger account | Name | Jan..Dec | Total
-  const financeOut = () => {
+  const financeOut = async () => {
     const M = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'], wb = XLSX.utils.book_new()
     deps.forEach(d => {
       const ls = depLines(d.id); if (!ls.length) return
@@ -1018,6 +1018,19 @@ function Budget({ t, lang, profile, refd, show }) {
       ws['!cols'] = [{ wch: 36 }, { wch: 46 }, ...M.map(() => ({ wch: 12 })), { wch: 14 }]
       XLSX.utils.book_append_sheet(wb, ws, String(d.name_en).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31))
     })
+    // cards funded in the room, in finance's CAPEX list layout (القسم | البند | Items | النوع | القيمة), with the GL the card was linked to
+    const cx = lines.filter(l => l.kind === 'capex' && deps.some(d => d.id === l.department_id))
+    if (cx.length) {
+      const ids = cx.map(l => l.ask_id).filter(Boolean)
+      const { data: as } = ids.length ? await supabase.from('asks').select('id,budget_line_id,capex_class,quarter,what_text').in('id', ids) : { data: [] }
+      const gids = [...new Set((as || []).map(a => a.budget_line_id).filter(Boolean))]
+      const { data: gls } = gids.length ? await supabase.from('budget_lines').select('id,gl_code,name').in('id', gids) : { data: [] }
+      const rows = cx.map(l => { const a = (as || []).find(x => x.id === l.ask_id), g = a && (gls || []).find(x => x.id === a.budget_line_id), d = refd.departments.find(x => x.id === l.department_id)
+        return [d?.name_ar || d?.name_en || '', l.name, a?.what_text || '', a?.capex_class || '', Number(l.amount) || 0, g?.gl_code || '', g?.name || '', a?.quarter || '', l.ask_id ? 'Funded in the room' : (l.note || '')] })
+      const ws = XLSX.utils.aoa_to_sheet([['القسم', 'البند', 'Items', 'النوع', 'القيمة', 'Ledger account', 'Name', 'Quarter', 'Source'], ...rows, ['Grand Total', '', '', '', rows.reduce((s, r) => s + r[4], 0)]])
+      ws['!cols'] = [{ wch: 28 }, { wch: 50 }, { wch: 50 }, { wch: 12 }, { wch: 14 }, { wch: 34 }, { wch: 40 }, { wch: 10 }, { wch: 20 }]
+      XLSX.utils.book_append_sheet(wb, ws, 'CAPEX ' + year)
+    }
     if (!wb.SheetNames.length) { show(t('fi_out_none')); return }
     XLSX.writeFile(wb, `smartBudget_GL_${year}.xlsx`)
   }
