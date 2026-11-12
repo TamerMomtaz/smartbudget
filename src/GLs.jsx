@@ -73,7 +73,7 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
   const glOf = (a) => rows.find(l => l.id === a.budget_line_id)
   const link = async (a, lineId) => { const { error } = await supabase.from('asks').update({ budget_line_id: lineId || null, ...(lineId ? { link_none: false } : {}) }).eq('id', a.id); if (error) show(error.message); else setAsks(xs => xs.map(x => x.id === a.id ? { ...x, budget_line_id: lineId || null } : x)) }
   // all the cards filed in one GL, and what they ask together
-  const money = (a) => opexYear(a) + (Number(a.capex_amount) || 0)
+  const money = (a) => opexYear(a) // only the yearly cost sits in a GL; the purchase is always CAPEX
   const askedIn = (g) => asks.filter(a => { const x = glOf(a); return x && x.gl_code === g.gl_code && x.department_id === g.department_id }).reduce((s, a) => s + money(a), 0)
   const raise = async (n, v) => { if (!confirm(n.name + '\n' + fmt(n.amount) + ' → ' + fmt(v) + ' ?')) return
     const { error } = await supabase.from('budget_lines').update({ amount: v, monthly: Number(n.amount) ? scale(n.monthly, v / Number(n.amount)) : null }).eq('id', n.id); if (error) show(error.message); else load() }
@@ -86,7 +86,7 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
   }
   // what was promised to finance: one Excel per department, OPEX (his GLs) and CAPEX (the cards)
   const excelDep = (d) => {
-    // a card linked to a GL is a running cost that lives inside that GL's figure; a card with no GL is new money
+    // the purchase (CAPEX) of every card goes on the CAPEX tab; its yearly cost goes inside its GL, or as a new row when it has no GL
     const cs = cardsOf(d.id), wb = XLSX.utils.book_new(), inGl = (code) => asks.filter(a => { const g = glOf(a); return g && g.gl_code === code && (g.department_id === d.id || a.department_id === d.id) })
     const op = pairs(d.id).map(p => { const l = p.b || p.n, b = p.b ? Number(p.b.amount) : 0, n = p.n ? Number(p.n.amount) : null
       return [l.gl_code || '', l.name, b, n, b && n != null ? Math.round(1000 * (n - b) / b) / 10 : null, p.n?.note || '', inGl(l.gl_code).map(a => a.title).join(' | ')] })
@@ -95,7 +95,7 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
     const w1 = XLSX.utils.aoa_to_sheet([['Ledger account', 'Name', base, next, 'Change %', 'Note', 'Cards inside this GL'], ...all, ['Grand Total', '', tot(2), tot(3), tot(2) ? Math.round(1000 * (tot(3) - tot(2)) / tot(2)) / 10 : null, '', '']])
     w1['!cols'] = [{ wch: 36 }, { wch: 46 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 90 }, { wch: 60 }]
     XLSX.utils.book_append_sheet(wb, w1, 'OPEX ' + next)
-    const cx = cs.filter(a => !glOf(a) && (Number(a.capex_amount) > 0 || a.quote_decides)).map(a => [d.name_ar || d.name_en, a.title, a.what_text || '', a.capex_class || '', Number(a.capex_amount) || 0, a.quarter || '', t(a.status), opexYear(a) || null, a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : ''])
+    const cx = cs.filter(a => Number(a.capex_amount) > 0 || a.quote_decides).map(a => [d.name_ar || d.name_en, a.title, a.what_text || '', a.capex_class || '', Number(a.capex_amount) || 0, a.quarter || '', t(a.status), opexYear(a) || null, a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : ''])
     const w2 = XLSX.utils.aoa_to_sheet([['القسم', 'البند', 'Items', 'النوع', 'القيمة', 'Quarter', 'Status', 'OPEX / year', 'Note'], ...cx, ['Grand Total', '', '', '', cx.reduce((s, r) => s + r[4], 0)]])
     w2['!cols'] = [{ wch: 28 }, { wch: 50 }, { wch: 50 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 14 }]
     XLSX.utils.book_append_sheet(wb, w2, 'CAPEX ' + next)
