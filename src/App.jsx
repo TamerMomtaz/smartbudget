@@ -318,10 +318,11 @@ function Asks({ t, lang, profile, refd, show }) {
   const [queue, setQueue] = useState(null) // review one by one: { ids, i }
   const [pick, setPick] = useState(null) // a department clicked in the board: show only its cards
   const [book, setBook] = useState(false) // the director's rulebook and ownership map
+  const [gone, setGone] = useState([]) // withdrawn cards: hidden, but the search still finds them
   const [find, setFind] = useState('') // search the cards by words: title, what it is, department
   const load = useCallback(async () => {
-    const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar,directorate_id)').eq('cycle_id', refd.cycle.id).neq('status', 'withdrawn').order('created_at')
-    setList(data || [])
+    const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar,directorate_id)').eq('cycle_id', refd.cycle.id).order('created_at')
+    setList((data || []).filter(a => a.status !== 'withdrawn')); setGone((data || []).filter(a => a.status === 'withdrawn'))
   }, [refd.cycle.id])
   useEffect(() => { load() }, [load])
   const goto = (q) => { if (!q || q.i >= q.ids.length) { setQueue(null); setEdit(null); if (q) show(t('review_done')); load(); return } const a = list.find(x => x.id === q.ids[q.i]); if (!a) return goto({ ...q, i: q.i + 1 }); setQueue(q); setEdit(a) }
@@ -341,6 +342,7 @@ function Asks({ t, lang, profile, refd, show }) {
   const fw = fold(find).trim().split(/\s+/).filter(Boolean)
   const hay = (a) => [a.title, a.what_text, a.lane_other, a.director_note, a.departments?.name_en, a.departments?.name_ar, t(a.status)].map(fold).join(' ')
   const shown = list.filter(a => (!pick || a.department_id === pick) && fw.every(w => hay(a).includes(w)))
+  const goneHit = fw.length ? gone.filter(a => (!pick || a.department_id === pick) && fw.every(w => hay(a).includes(w))) : []
   const depsHere = refd.departments.filter(d => list.some(a => a.department_id === d.id))
   const ss = shown.reduce((s, a) => ({ capex: s.capex + capex(a), opex: s.opex + opexYear(a) }), { capex: 0, opex: 0 })
   const groups = head ? [[null, list]] : [
@@ -356,7 +358,8 @@ function Asks({ t, lang, profile, refd, show }) {
     {!head && list.length > 0 && <div className="find-bar" data-help="find_cards"><input type="search" value={find} onChange={e => setFind(e.target.value)} placeholder={'🔎 ' + t('find_ph')} />
       <select value={pick || ''} onChange={e => setPick(Number(e.target.value) || null)}><option value="">{t('find_all_deps')}</option>{depsHere.map(d => <option key={d.id} value={d.id}>{d[lang === 'ar' ? 'name_ar' : 'name_en']} ({list.filter(a => a.department_id === d.id).length})</option>)}</select>
       {(find || pick) && <><span className="m">{shown.length} {t('find_found')}</span><button className="btn ghost sm" onClick={() => { setFind(''); setPick(null) }}>✕ {t('board_show_all')}</button></>}</div>}
-    {!head && (find || pick) && shown.length === 0 && <div className="card"><p className="m">{t('find_none')}</p></div>}
+    {!head && goneHit.length > 0 && <div className="dep-grp"><p className="k">{t('withdrawn')} · {goneHit.length}</p><p className="m">{t('find_gone')}</p>{goneHit.map(a => <AskRow key={a.id} a={a} t={t} lang={lang} onOpen={setEdit} />)}</div>}
+    {!head && (find || pick) && shown.length === 0 && goneHit.length === 0 && <div className="card"><p className="m">{t('find_none')}</p></div>}
     {!head && pick && <div className="pick-bar"><span>{t('board_showing')} <b>{refd.departments.find(d => d.id === pick)?.[lang === 'ar' ? 'name_ar' : 'name_en']}</b> · {shown.length}</span><button className="btn" onClick={() => setPick(null)}>✕ {t('board_show_all')}</button></div>}
     {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(ss.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(ss.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(ss.capex + ss.opex)}</b></div></div>}
     {groups.map(([label, items], gi) => items.length > 0 && <div key={gi}>
