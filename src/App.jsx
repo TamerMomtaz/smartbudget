@@ -704,8 +704,9 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
 /* ---------------- THE ROOM ---------------- */
 function Room({ t, lang, profile, refd, show }) {
   const [coming, setComing] = useState([])
-  const [list, setList] = useState([]); const [i, setI] = useState(0); const [mine, setMine] = useState({}); const [totals, setTotals] = useState({})
+  const [list, setList] = useState([]); const [i, setI] = useState(0); const [mine, setMine] = useState({}); const [totals, setTotals] = useState({}); const [gls, setGls] = useState([])
   const load = useCallback(async () => {
+    supabase.from('budget_lines').select('id,gl_code,name').eq('kind', 'gl').then(({ data }) => setGls(data || []))
     const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar), attachments(*)').eq('cycle_id', refd.cycle.id).in('status', ['submitted', 'pitched', 'green', 'yellow', 'gate']).order('department_id').order('created_at')
     setList(data || [])
     const { data: cm } = await supabase.from('asks').select('status').eq('cycle_id', refd.cycle.id).in('status', ['draft', 'returned', 'with_director']); setComing(cm || [])
@@ -752,6 +753,7 @@ function Room({ t, lang, profile, refd, show }) {
       <p className="k">{a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en']} · {a.register_code || a.lane_other || ''} · {a.quarter || ''} · <span className={'pill ' + a.status}>{t(a.status)}</span></p>
       <h2><Tr text={a.title} lang={lang} /></h2>
       <p><Tr text={a.what_text} lang={lang} /></p>
+      <p className="m">📒 {(() => { const g = gls.find(l => l.id === a.budget_line_id); return g ? t('gl_room') + ': ' + (g.gl_code || '') + ' · ' + g.name : t('gl_room_new') })()}</p>
       <div className="tot"><div style={{ background: '#115585', color: '#fff' }}><span style={{ color: '#C9D6DF' }}>{t('capex_lbl')} · {t(`c_${a.capex_class}`)}</span><b style={{ color: '#fff' }}>{a.quote_decides ? t('quote_decides').split('—')[1] : fmt(capex(a))}</b></div><div style={{ background: '#C4500F', color: '#fff' }}><span style={{ color: '#FDEEE4' }}>{t('opex_lbl')}</span><b style={{ color: '#fff' }}>{fmt(oy)}</b></div><div style={{ background: '#115585', color: '#fff' }}><span style={{ color: '#C9D6DF' }}>{t('year_one')}</span><b style={{ color: '#fff' }}>{fmt(capex(a) + oy)}</b></div></div>
     </div>
     <div className="grid2" style={{ marginTop: 12 }}>

@@ -72,6 +72,11 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
   const cardsOf = (id) => asks.filter(a => a.department_id === id)
   const glOf = (a) => rows.find(l => l.id === a.budget_line_id)
   const link = async (a, lineId) => { const { error } = await supabase.from('asks').update({ budget_line_id: lineId || null, ...(lineId ? { link_none: false } : {}) }).eq('id', a.id); if (error) show(error.message); else setAsks(xs => xs.map(x => x.id === a.id ? { ...x, budget_line_id: lineId || null } : x)) }
+  // all the cards filed in one GL, and what they ask together
+  const money = (a) => opexYear(a) + (Number(a.capex_amount) || 0)
+  const askedIn = (g) => asks.filter(a => { const x = glOf(a); return x && x.gl_code === g.gl_code && x.department_id === g.department_id }).reduce((s, a) => s + money(a), 0)
+  const raise = async (n, v) => { if (!confirm(n.name + '\n' + fmt(n.amount) + ' → ' + fmt(v) + ' ?')) return
+    const { error } = await supabase.from('budget_lines').update({ amount: v, monthly: Number(n.amount) ? scale(n.monthly, v / Number(n.amount)) : null }).eq('id', n.id); if (error) show(error.message); else load() }
   // money typed in the wrong box: a contract or yearly service is OPEX, a machine is CAPEX
   const swap = async (a) => {
     const cx = Number(a.capex_amount) || 0, ox = opexYear(a), toOpex = cx > 0 && !ox; if (!confirm(a.title + '\n' + fmt(toOpex ? cx : ox) + ' → ' + (toOpex ? 'OPEX' : 'CAPEX') + ' ?')) return
@@ -116,14 +121,6 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
           {lead && w.length > 0 && <button className="btn y" disabled={busy} onClick={() => send(w)}>📤 {t('gl_send_dep')} +{rate}% ({w.length})</button>}
           <button className="btn" onClick={() => excelDep(d)}>📥 {t('gl_xl_dep')}</button>
           {cs.length > 0 && <span className="m">{t('gl_cards')}: {cs.filter(a => glOf(a)).length} / {cs.length} {t('gl_linked')}</span>}</div>
-        {cs.length > 0 && <div><p className="k" style={{ marginTop: 14 }}>🃏 {t('gl_cards')}</p><p className="m">{t('gl_cards_hint')}</p>
-          <table className="tb gl-t"><thead><tr><th>{t('gl_card')}</th><th>CAPEX</th><th>OPEX</th><th>GL</th></tr></thead><tbody>
-            {cs.map(a => { const g = glOf(a), sg = !g && guess(a, gls), can = lead || ['draft', 'returned', 'yellow'].includes(a.status)
-              return <tr key={a.id}><td><Tr text={a.title} lang={lang} /><div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}{lead && Number(a.capex_amount) > 0 && !opexYear(a) && <div><button className="btn ghost sm" onClick={() => swap(a)}>{t('gl_to_opex')} →</button></div>}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}{lead && opexYear(a) > 0 && !Number(a.capex_amount) && <div><button className="btn ghost sm" onClick={() => swap(a)}>← {t('gl_to_capex')}</button></div>}</td>
-                <td>{can ? <select value={g?.id || ''} onChange={e => link(a, Number(e.target.value) || null)} style={{ width: '100%' }}><option value="">{t('gl_new')}</option>{g && !gls.some(l => l.id === g.id) && <option value={g.id}>{g.gl_code} · {g.name}</option>}{gls.map(l => <option key={l.id} value={l.id}>{l.gl_code} · {l.name}</option>)}</select> : <span>{g ? g.gl_code + ' · ' + g.name : t('gl_new')}</span>}
-                  {g && (() => { const n27 = rows.find(l => l.fiscal_year === next && l.gl_code === g.gl_code && l.department_id === g.department_id); return <div className="m">{t('gl_in_gl')} {next}: <b>{n27 ? fmt(n27.amount) : '—'}</b> · {t('gl_in_gl2')}</div> })()}
-                  {can && sg && <div><button className="btn ghost sm" onClick={() => link(a, sg.id)}>💡 {t('gl_looks')} {sg.name} ✓</button></div>}</td></tr> })}
-          </tbody></table></div>}
         {open[d.id] && <div><table className="tb gl-t" style={{ marginTop: 8 }}><thead><tr><th>GL</th><th>{base}</th><th>{next}</th><th></th></tr></thead><tbody>
           {ps.map((p, i) => { const l = p.b || p.n, n2 = p.n, can = canWrite && n2 && !n2.locked
             return <tr key={i}><td><span className="m" dir="auto">{l.gl_code}</span><div dir="auto">{l.name}</div>{(p.n?.note || l.note) && <div className={'m' + (/Above the ceiling/.test(p.n?.note || '') ? ' gate' : '')}>{p.n?.note || l.note}</div>}</td>
@@ -133,6 +130,16 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
               <td><Pct b={p.b} n={n2} /><div className="gl-act">{can && <button className="btn ghost sm" title={t('gl_drop')} onClick={() => drop(n2)}>✕ {t('gl_drop')}</button>}
                 {lead && <select value="" onChange={e => e.target.value && move(p, e.target.value)} style={{ maxWidth: 150 }}><option value="">{t('gl_move')}</option>{deps.filter(x => x.id !== d.id).map(x => <option key={x.id} value={x.id}>{nm(x)}</option>)}</select>}</div></td></tr> })}
         </tbody></table></div>}
+        {cs.length > 0 && <div><p className="k" style={{ marginTop: 14 }}>🃏 {t('gl_cards')}</p><p className="m">{t('gl_cards_hint')}</p>
+          <table className="tb gl-t"><thead><tr><th>{t('gl_card')}</th><th>CAPEX</th><th>OPEX</th><th>GL</th></tr></thead><tbody>
+            {cs.map(a => { const g = glOf(a), sg = !g && guess(a, gls), can = lead || ['draft', 'returned', 'yellow'].includes(a.status)
+              return <tr key={a.id}><td><Tr text={a.title} lang={lang} /><div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}{lead && Number(a.capex_amount) > 0 && !opexYear(a) && <div><button className="btn ghost sm" onClick={() => swap(a)}>{t('gl_to_opex')} →</button></div>}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}{lead && opexYear(a) > 0 && !Number(a.capex_amount) && <div><button className="btn ghost sm" onClick={() => swap(a)}>← {t('gl_to_capex')}</button></div>}</td>
+                <td>{can ? <select value={g?.id || ''} onChange={e => link(a, Number(e.target.value) || null)} style={{ width: '100%' }}><option value="">{t('gl_new')}</option>{g && !gls.some(l => l.id === g.id) && <option value={g.id}>{g.gl_code} · {g.name}</option>}{gls.map(l => <option key={l.id} value={l.id}>{l.gl_code} · {l.name}</option>)}</select> : <span>{g ? g.gl_code + ' · ' + g.name : t('gl_new')}</span>}
+                  {g && (() => { const n27 = rows.find(l => l.fiscal_year === next && l.gl_code === g.gl_code && l.department_id === g.department_id), asked = askedIn(g)
+                    return <div className="m">{t('gl_in_gl')} {next}: <b>{n27 ? fmt(n27.amount) : '—'}</b> · {t('gl_in_gl2')}: <b>{fmt(asked)}</b>
+                      {n27 && asked > Number(n27.amount) ? <> <span className="pill gate">{t('gl_short')} {fmt(asked - Number(n27.amount))}</span>{lead && !n27.locked && <button className="btn ghost sm" onClick={() => raise(n27, asked)}>{t('gl_raise')} {fmt(asked)}</button>}</> : n27 ? <> <span className="pill green">✓ {t('gl_covered')}</span></> : null}</div> })()}
+                  {can && sg && <div><button className="btn ghost sm" onClick={() => link(a, sg.id)}>💡 {t('gl_looks')} {sg.name} ✓</button></div>}</td></tr> })}
+          </tbody></table></div>}
       </div> })}
   </>
 }
