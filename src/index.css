@@ -489,3 +489,5 @@ html[data-theme=arena] .rat-own{background:#1A2531}
 html[data-theme=arena] .rat-own.other{background:#2A1B11}
 html[data-theme=arena] .rat-b,html[data-theme=arena] .rat-teach,html[data-theme=arena] .rule-row{border-color:#26333F}
 .card.book input,.card.book select{width:100%;box-sizing:border-box}
+
+.find-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.find-bar input{flex:1;min-width:200px}.find-bar select{max-width:260px}

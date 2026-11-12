@@ -318,6 +318,7 @@ function Asks({ t, lang, profile, refd, show }) {
   const [queue, setQueue] = useState(null) // review one by one: { ids, i }
   const [pick, setPick] = useState(null) // a department clicked in the board: show only its cards
   const [book, setBook] = useState(false) // the director's rulebook and ownership map
+  const [find, setFind] = useState('') // search the cards by words: title, what it is, department
   const load = useCallback(async () => {
     const { data } = await supabase.from('asks').select('*, departments(name_en,name_ar,directorate_id)').eq('cycle_id', refd.cycle.id).neq('status', 'withdrawn').order('created_at')
     setList(data || [])
@@ -335,7 +336,10 @@ function Asks({ t, lang, profile, refd, show }) {
   const early = ['draft', 'returned']
   const byDept = (items) => refd.departments.map(d => [d, items.filter(a => a.department_id === d.id)]).filter(([, as]) => as.length)
     .concat(items.some(a => !refd.departments.find(d => d.id === a.department_id)) ? [[null, items.filter(a => !refd.departments.find(d => d.id === a.department_id))]] : [])
-  const shown = pick ? list.filter(a => a.department_id === pick) : list
+  const fw = find.trim().toLowerCase().split(/\s+/).filter(Boolean)
+  const hay = (a) => [a.title, a.what_text, a.lane_other, a.director_note, a.departments?.name_en, a.departments?.name_ar, t(a.status)].join(' ').toLowerCase()
+  const shown = list.filter(a => (!pick || a.department_id === pick) && fw.every(w => hay(a).includes(w)))
+  const depsHere = refd.departments.filter(d => list.some(a => a.department_id === d.id))
   const ss = shown.reduce((s, a) => ({ capex: s.capex + capex(a), opex: s.opex + opexYear(a) }), { capex: 0, opex: 0 })
   const groups = head ? [[null, list]] : [
     [t('waiting_you'), shown.filter(a => a.status === 'with_director')],
@@ -347,6 +351,10 @@ function Asks({ t, lang, profile, refd, show }) {
       <p className="m">{list.length === 0 ? t('no_asks') : head ? t('flow_head') : t('flow_dir')}</p>
       <div className="btns"><button className="btn p" data-help="new_ask" onClick={() => setEdit({})}>＋ {t('new_ask')}</button>{!head && <button className="btn" data-help="rulebook" onClick={() => setBook(true)}>📜 {t('rat_book')}</button>}</div></div>
     {!head && <Board t={t} lang={lang} profile={profile} refd={refd} list={list} pick={pick} onPick={(id) => { setPick(id); if (id) setTimeout(() => document.querySelector('.pick-bar')?.scrollIntoView({ behavior: 'smooth', block: 'start' }), 50) }} />}
+    {!head && list.length > 0 && <div className="find-bar" data-help="find_cards"><input type="search" value={find} onChange={e => setFind(e.target.value)} placeholder={'🔎 ' + t('find_ph')} />
+      <select value={pick || ''} onChange={e => setPick(Number(e.target.value) || null)}><option value="">{t('find_all_deps')}</option>{depsHere.map(d => <option key={d.id} value={d.id}>{d[lang === 'ar' ? 'name_ar' : 'name_en']} ({list.filter(a => a.department_id === d.id).length})</option>)}</select>
+      {(find || pick) && <><span className="m">{shown.length} {t('find_found')}</span><button className="btn ghost sm" onClick={() => { setFind(''); setPick(null) }}>✕ {t('board_show_all')}</button></>}</div>}
+    {!head && (find || pick) && shown.length === 0 && <div className="card"><p className="m">{t('find_none')}</p></div>}
     {!head && pick && <div className="pick-bar"><span>{t('board_showing')} <b>{refd.departments.find(d => d.id === pick)?.[lang === 'ar' ? 'name_ar' : 'name_en']}</b> · {shown.length}</span><button className="btn" onClick={() => setPick(null)}>✕ {t('board_show_all')}</button></div>}
     {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(ss.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(ss.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(ss.capex + ss.opex)}</b></div></div>}
     {groups.map(([label, items], gi) => items.length > 0 && <div key={gi}>
