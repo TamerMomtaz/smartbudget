@@ -73,17 +73,18 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
   const link = async (a, lineId) => { const { error } = await supabase.from('asks').update({ budget_line_id: lineId || null, ...(lineId ? { link_none: false } : {}) }).eq('id', a.id); if (error) show(error.message); else setAsks(xs => xs.map(x => x.id === a.id ? { ...x, budget_line_id: lineId || null } : x)) }
   // what was promised to finance: one Excel per department, OPEX (his GLs) and CAPEX (the cards)
   const excelDep = (d) => {
-    const cs = cardsOf(d.id), wb = XLSX.utils.book_new(), by = (code) => cs.filter(a => glOf(a)?.gl_code === code)
-    const op = pairs(d.id).map(p => { const l = p.b || p.n, c = by(l.gl_code), add = c.reduce((s, a) => s + opexYear(a), 0), b = p.b ? Number(p.b.amount) : 0, n = p.n ? Number(p.n.amount) : null
-      return [l.gl_code || '', l.name, b, n, add || null, (n ?? b) + add, b ? Math.round(1000 * ((n ?? b) + add - b) / b) / 10 : null, c.map(a => a.title).join(' | ')] })
-    const fresh = cs.filter(a => !glOf(a) && opexYear(a) > 0).map(a => ['', a.title, null, null, opexYear(a), opexYear(a), null, 'New, not in a GL'])
+    // a card linked to a GL is a running cost that lives inside that GL's figure; a card with no GL is new money
+    const cs = cardsOf(d.id), wb = XLSX.utils.book_new(), inGl = (code) => asks.filter(a => { const g = glOf(a); return g && g.gl_code === code && (g.department_id === d.id || a.department_id === d.id) })
+    const op = pairs(d.id).map(p => { const l = p.b || p.n, b = p.b ? Number(p.b.amount) : 0, n = p.n ? Number(p.n.amount) : null
+      return [l.gl_code || '', l.name, b, n, b && n != null ? Math.round(1000 * (n - b) / b) / 10 : null, p.n?.note || '', inGl(l.gl_code).map(a => a.title).join(' | ')] })
+    const fresh = cs.filter(a => !glOf(a) && opexYear(a) > 0).map(a => ['', a.title, null, opexYear(a), null, 'New running cost from a card, not in a GL', ''])
     const all = [...op, ...fresh], tot = (i) => all.reduce((s, r) => s + (Number(r[i]) || 0), 0)
-    const w1 = XLSX.utils.aoa_to_sheet([['Ledger account', 'Name', base, next + ' (GL)', 'New from cards', next + ' total', 'Change %', 'Cards'], ...all, ['Grand Total', '', tot(2), tot(3), tot(4), tot(5), tot(2) ? Math.round(1000 * (tot(5) - tot(2)) / tot(2)) / 10 : null, '']])
-    w1['!cols'] = [{ wch: 36 }, { wch: 46 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 60 }]
+    const w1 = XLSX.utils.aoa_to_sheet([['Ledger account', 'Name', base, next, 'Change %', 'Note', 'Cards inside this GL'], ...all, ['Grand Total', '', tot(2), tot(3), tot(2) ? Math.round(1000 * (tot(3) - tot(2)) / tot(2)) / 10 : null, '', '']])
+    w1['!cols'] = [{ wch: 36 }, { wch: 46 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 90 }, { wch: 60 }]
     XLSX.utils.book_append_sheet(wb, w1, 'OPEX ' + next)
-    const cx = cs.filter(a => Number(a.capex_amount) > 0 || a.quote_decides).map(a => [d.name_ar || d.name_en, a.title, a.what_text || '', a.capex_class || '', Number(a.capex_amount) || 0, a.quarter || '', t(a.status), glOf(a)?.gl_code || '', opexYear(a) || null, a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : ''])
-    const w2 = XLSX.utils.aoa_to_sheet([['القسم', 'البند', 'Items', 'النوع', 'القيمة', 'Quarter', 'Status', 'Ledger account', 'OPEX / year', 'Note'], ...cx, ['Grand Total', '', '', '', cx.reduce((s, r) => s + r[4], 0)]])
-    w2['!cols'] = [{ wch: 28 }, { wch: 50 }, { wch: 50 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 16 }, { wch: 34 }, { wch: 14 }, { wch: 14 }]
+    const cx = cs.filter(a => !glOf(a) && (Number(a.capex_amount) > 0 || a.quote_decides)).map(a => [d.name_ar || d.name_en, a.title, a.what_text || '', a.capex_class || '', Number(a.capex_amount) || 0, a.quarter || '', t(a.status), opexYear(a) || null, a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : ''])
+    const w2 = XLSX.utils.aoa_to_sheet([['القسم', 'البند', 'Items', 'النوع', 'القيمة', 'Quarter', 'Status', 'OPEX / year', 'Note'], ...cx, ['Grand Total', '', '', '', cx.reduce((s, r) => s + r[4], 0)]])
+    w2['!cols'] = [{ wch: 28 }, { wch: 50 }, { wch: 50 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 14 }]
     XLSX.utils.book_append_sheet(wb, w2, 'CAPEX ' + next)
     XLSX.writeFile(wb, `Budget_${next}_${d.code || d.name_en}.xlsx`)
   }
@@ -107,7 +108,7 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
           {cs.length > 0 && <span className="m">{t('gl_cards')}: {cs.filter(a => glOf(a)).length} / {cs.length} {t('gl_linked')}</span>}</div>
         {open[d.id] && <div style={{ overflowX: 'auto' }}><table className="tb" style={{ marginTop: 8 }}><thead><tr><th>GL</th><th>{base}</th><th>{next}</th><th></th><th></th></tr></thead><tbody>
           {ps.map((p, i) => { const l = p.b || p.n, n2 = p.n, can = canWrite && n2 && !n2.locked
-            return <tr key={i}><td><span className="m">{l.gl_code}</span><div>{l.name}</div>{l.note && <div className="m">{l.note}</div>}</td>
+            return <tr key={i}><td><span className="m">{l.gl_code}</span><div>{l.name}</div>{(p.n?.note || l.note) && <div className={'m' + (/Above the ceiling/.test(p.n?.note || '') ? ' gate' : '')}>{p.n?.note || l.note}</div>}</td>
               <td className="m">{p.b ? fmt(p.b.amount) : '—'}</td>
               <td>{!n2 ? <span className="m">—</span> : can ? <input type="text" inputMode="decimal" style={{ width: 120 }} value={ed[n2.id] ?? String(Number(n2.amount))} onChange={e => setEd({ ...ed, [n2.id]: e.target.value })} onBlur={() => saveAmt(n2)} onKeyDown={e => e.key === 'Enter' && e.target.blur()} /> : fmt(n2.amount)}
                 {p.b && n2 && <div className="m">+15% = {fmt(Math.round(p.b.amount * 1.15))} · +20% = {fmt(Math.round(p.b.amount * 1.2))}</div>}</td>
