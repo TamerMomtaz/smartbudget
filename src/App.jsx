@@ -336,8 +336,10 @@ function Asks({ t, lang, profile, refd, show }) {
   const early = ['draft', 'returned']
   const byDept = (items) => refd.departments.map(d => [d, items.filter(a => a.department_id === d.id)]).filter(([, as]) => as.length)
     .concat(items.some(a => !refd.departments.find(d => d.id === a.department_id)) ? [[null, items.filter(a => !refd.departments.find(d => d.id === a.department_id))]] : [])
-  const fw = find.trim().toLowerCase().split(/\s+/).filter(Boolean)
-  const hay = (a) => [a.title, a.what_text, a.lane_other, a.director_note, a.departments?.name_en, a.departments?.name_ar, t(a.status)].join(' ').toLowerCase()
+  // Arabic is typed many ways: أدوات / ادوات, معدة / معده, مبنى / مبني. Fold them so any spelling finds the card.
+  const fold = (x) => String(x || '').toLowerCase().replace(/[\u064B-\u0652\u0640]/g, '').replace(/[أإآٱ]/g, 'ا').replace(/ة/g, 'ه').replace(/ى/g, 'ي').replace(/ؤ/g, 'و').replace(/ئ/g, 'ي')
+  const fw = fold(find).trim().split(/\s+/).filter(Boolean)
+  const hay = (a) => [a.title, a.what_text, a.lane_other, a.director_note, a.departments?.name_en, a.departments?.name_ar, t(a.status)].map(fold).join(' ')
   const shown = list.filter(a => (!pick || a.department_id === pick) && fw.every(w => hay(a).includes(w)))
   const depsHere = refd.departments.filter(d => list.some(a => a.department_id === d.id))
   const ss = shown.reduce((s, a) => ({ capex: s.capex + capex(a), opex: s.opex + opexYear(a) }), { capex: 0, opex: 0 })
