@@ -24,7 +24,7 @@ const scale = (m, k) => Array.isArray(m) && m.length === 12 ? m.map(v => r2(Numb
 export default function GLs({ t, lang, profile, refd, deps, show }) {
   const next = Number(String(refd.cycle?.name || '').match(/20\d\d/)?.[0]) || new Date().getFullYear() + 1, base = next - 1
   const lead = profile.role === 'admin' || profile.role === 'director', canWrite = profile.role !== 'excom'
-  const [rows, setRows] = useState([]), [asks, setAsks] = useState([]), [rate, setRate] = useState(15), [busy, setBusy] = useState(false), [open, setOpen] = useState({}), [ed, setEd] = useState({})
+  const [rows, setRows] = useState([]), [asks, setAsks] = useState([]), [rate, setRate] = useState(15), [busy, setBusy] = useState(false), [open, setOpen] = useState({}), [ed, setEd] = useState({}), [dep, setDep] = useState('')
   const nm = (d) => d?.[lang === 'ar' ? 'name_ar' : 'name_en']
   const load = useCallback(async () => {
     const { data, error } = await supabase.from('budget_lines').select('*').in('fiscal_year', [base, next]).eq('kind', 'gl').order('gl_code')
@@ -72,6 +72,13 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
   const cardsOf = (id) => asks.filter(a => a.department_id === id)
   const glOf = (a) => rows.find(l => l.id === a.budget_line_id)
   const link = async (a, lineId) => { const { error } = await supabase.from('asks').update({ budget_line_id: lineId || null, ...(lineId ? { link_none: false } : {}) }).eq('id', a.id); if (error) show(error.message); else setAsks(xs => xs.map(x => x.id === a.id ? { ...x, budget_line_id: lineId || null } : x)) }
+  // money typed in the wrong box: a contract or yearly service is OPEX, a machine is CAPEX
+  const swap = async (a) => {
+    const cx = Number(a.capex_amount) || 0, ox = opexYear(a), toOpex = cx > 0 && !ox; if (!confirm(a.title + '\n' + fmt(toOpex ? cx : ox) + ' → ' + (toOpex ? 'OPEX' : 'CAPEX') + ' ?')) return
+    const zero = Object.fromEntries(OPEX.map(k => [k, 0]))
+    const patch = toOpex ? { ...zero, capex_amount: null, [/صيان|عقد|عقود|maint|contract/i.test(a.title) ? 'opex_maintenance' : 'opex_other']: cx } : { ...zero, capex_amount: ox }
+    const { error } = await supabase.from('asks').update(patch).eq('id', a.id); if (error) show(error.message); else { setAsks(xs => xs.map(x => x.id === a.id ? { ...x, ...patch } : x)); show('✓') }
+  }
   // what was promised to finance: one Excel per department, OPEX (his GLs) and CAPEX (the cards)
   const excelDep = (d) => {
     // a card linked to a GL is a running cost that lives inside that GL's figure; a card with no GL is new money
@@ -90,6 +97,7 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
     XLSX.writeFile(wb, `Budget_${next}_${d.code || d.name_en}.xlsx`)
   }
   const mine = deps.filter(d => of(d.id, base).length || of(d.id, next).length || cardsOf(d.id).length || profile.role === 'head')
+  const seen = dep ? mine.filter(d => d.id === Number(dep)) : mine
   const waiting = mine.flatMap(d => toSend(d.id))
 
   return <>
@@ -97,9 +105,10 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
       <div className="btns" style={{ alignItems: 'center' }}>
         {lead && <><label className="m" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{t('gl_rate')} <select value={rate} onChange={e => setRate(Number(e.target.value))}><option value={0}>0%</option><option value={15}>+15%</option><option value={20}>+20%</option></select></label>
           <button className="btn p" disabled={busy || !waiting.length} onClick={() => send(waiting)}>📤 {t('gl_send_all')} ({waiting.length})</button></>}
+        {mine.length > 1 && <select value={dep} onChange={e => setDep(e.target.value)} style={{ maxWidth: 280 }}><option value="">{t('gl_all_deps')}</option>{mine.map(d => <option key={d.id} value={d.id}>{nm(d)}</option>)}</select>}
         <button className="btn" onClick={() => excel(next)}>📥 Excel {next}</button><button className="btn ghost" onClick={() => excel(base)}>📥 Excel {base}</button></div></div>
     {mine.length === 0 && <div className="card"><p className="m">{t('gl_none')}</p></div>}
-    {mine.map(d => { const cs = cardsOf(d.id), gls = of(d.id, base).length ? of(d.id, base) : of(d.id, next); const ps = pairs(d.id), b = sum(of(d.id, base)), n = sum(of(d.id, next)), w = toSend(d.id), sent = of(d.id, next).length
+    {seen.map(d => { const cs = cardsOf(d.id), gls = of(d.id, base).length ? of(d.id, base) : of(d.id, next); const ps = pairs(d.id), b = sum(of(d.id, base)), n = sum(of(d.id, next)), w = toSend(d.id), sent = of(d.id, next).length
       return <div key={d.id} className="card" style={{ marginTop: 12 }}>
         <div className="rh"><h2 style={{ margin: 0 }}>{nm(d)}</h2><span className={'pill ' + (sent ? 'green' : 'draft')}>{sent ? '✓ ' + t('gl_with_dep') : t('gl_not_sent')}</span></div>
         <div className="tot four"><div><span>GL</span><b>{ps.length}</b></div><div><span>{base}</span><b>{fmt(b)}</b></div><div className="o"><span>{next}</span><b>{sent ? fmt(n) : '—'}</b></div><div><span>{t('gl_change')}</span><b>{(() => { const both = ps.filter(p => p.b && p.n), bb = sum(both.map(p => p.b)), nn = sum(both.map(p => p.n)); return bb ? (nn >= bb ? '+' : '') + Math.round(1000 * (nn - bb) / bb) / 10 + '%' : '—' })()}</b></div></div>
@@ -110,8 +119,9 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
         {cs.length > 0 && <div><p className="k" style={{ marginTop: 14 }}>🃏 {t('gl_cards')}</p><p className="m">{t('gl_cards_hint')}</p>
           <table className="tb gl-t"><thead><tr><th>{t('gl_card')}</th><th>CAPEX</th><th>OPEX</th><th>GL</th></tr></thead><tbody>
             {cs.map(a => { const g = glOf(a), sg = !g && guess(a, gls), can = lead || ['draft', 'returned', 'yellow'].includes(a.status)
-              return <tr key={a.id}><td><Tr text={a.title} lang={lang} /><div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}</td>
+              return <tr key={a.id}><td><Tr text={a.title} lang={lang} /><div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}{lead && Number(a.capex_amount) > 0 && !opexYear(a) && <div><button className="btn ghost sm" onClick={() => swap(a)}>{t('gl_to_opex')} →</button></div>}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}{lead && opexYear(a) > 0 && !Number(a.capex_amount) && <div><button className="btn ghost sm" onClick={() => swap(a)}>← {t('gl_to_capex')}</button></div>}</td>
                 <td>{can ? <select value={g?.id || ''} onChange={e => link(a, Number(e.target.value) || null)} style={{ width: '100%' }}><option value="">{t('gl_new')}</option>{g && !gls.some(l => l.id === g.id) && <option value={g.id}>{g.gl_code} · {g.name}</option>}{gls.map(l => <option key={l.id} value={l.id}>{l.gl_code} · {l.name}</option>)}</select> : <span>{g ? g.gl_code + ' · ' + g.name : t('gl_new')}</span>}
+                  {g && (() => { const n27 = rows.find(l => l.fiscal_year === next && l.gl_code === g.gl_code && l.department_id === g.department_id); return <div className="m">{t('gl_in_gl')} {next}: <b>{n27 ? fmt(n27.amount) : '—'}</b> · {t('gl_in_gl2')}</div> })()}
                   {can && sg && <div><button className="btn ghost sm" onClick={() => link(a, sg.id)}>💡 {t('gl_looks')} {sg.name} ✓</button></div>}</td></tr> })}
           </tbody></table></div>}
         {open[d.id] && <div><table className="tb gl-t" style={{ marginTop: 8 }}><thead><tr><th>GL</th><th>{base}</th><th>{next}</th><th></th></tr></thead><tbody>
