@@ -271,10 +271,11 @@ function DeptSelect({ value, onChange, deps, refd, lang, disabled, blank }) {
   </select>
 }
 
+const isCond = (a) => /^(Approved with comments|موافقة بملاحظات)/.test(a.director_note || '')
 const isRefused = (a) => a.status === 'withdrawn' && /^(Refused|مرفوض)/.test(a.director_note || '')
 function AskRow({ a, t, lang, onOpen, showDept }) {
   return <div className="card ask" onClick={() => onOpen(a)}>
-    <div style={{ flex: 1 }}><div className="t"><Tr text={a.title} lang={lang} /></div><div className="sub">{showDept ? (a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en'] + ' · ') : ''}{a.register_code || a.lane_other || ''} {a.quarter ? '· ' + a.quarter : ''}</div><span className={'pill ' + a.status}>{isRefused(a) ? '🚫 ' + t('refused') : t(a.status)}</span></div>
+    <div style={{ flex: 1 }}><div className="t"><Tr text={a.title} lang={lang} /></div><div className="sub">{showDept ? (a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en'] + ' · ') : ''}{a.register_code || a.lane_other || ''} {a.quarter ? '· ' + a.quarter : ''}</div><span className={'pill ' + a.status}>{isRefused(a) ? '🚫 ' + t('refused') : t(a.status)}</span>{isCond(a) && !['returned', 'draft', 'with_director', 'withdrawn'].includes(a.status) && <span className="pill yellow" style={{ marginInlineStart: 6 }}>📝 {t('ok_cond_pill')}</span>}</div>
     <div className="amt"><span className="m">{t('capex_lbl')}</span><b>{a.quote_decides ? t('quote_decides').split('—')[0] : fmt(capex(a))}</b><span className="m">{t('opex_lbl')} {fmt(opexYear(a))}</span></div>
   </div>
 }
@@ -531,8 +532,9 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
     what_text: a.what_text, capex_class: a.capex_class, capex_amount: a.quote_decides ? null : num(a.capex_amount), quote_decides: !!a.quote_decides, quarter: a.quarter,
     ...Object.fromEntries(OPEX.map(k => [k, num(a[k]) ?? 0])), opex_notes: a.opex_notes, ...(HAS_ITEMS.on ? { opex_items: a.opex_items || [] } : {}), return_text: a.return_text, return_when: a.return_when, measure_text: a.measure_text, measure_when: a.measure_when,
     if_not_funded: a.if_not_funded, what_we_stop: a.what_we_stop, budget_line_id: a.budget_line_id || null, link_none: !!a.link_none && !a.register_code && !a.budget_line_id, status, submitted_at: status === 'submitted' ? new Date().toISOString() : a.submitted_at || null,
-    ...(status === 'returned' ? { director_note: note.trim() } : {}),
+    ...(status === 'returned' ? { director_note: note.trim() } : cond.current && status === 'submitted' ? { director_note: t('ok_cond') + ': ' + note.trim() } : {}),
   })
+  const cond = useRef(false) // approved, and the director's comments still go to the head
   // what is still empty before the card can be sent, with the step it lives on
   const missing = [
     !a.title.trim() && ['s_title', 0], !a.department_id && ['department', 0],
@@ -571,7 +573,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
     setBusy(false)
     if (res.error) { show(res.error.message); return }
     const moved = status !== st || !a.id
-    await supabase.from('ask_events').insert({ ask_id: res.data.id, actor_id: profile.id, event: moved && a.id ? 'status' : (a.id ? 'saved' : 'created'), detail: moved ? { status, ...(status === 'returned' ? { note: note.trim() } : {}) } : null })
+    await supabase.from('ask_events').insert({ ask_id: res.data.id, actor_id: profile.id, event: moved && a.id ? 'status' : (a.id ? 'saved' : 'created'), detail: moved ? { status, ...(status === 'returned' || cond.current ? { note: note.trim() } : {}), ...(cond.current ? { with_comments: true } : {}) } : null }); cond.current = false
     const done = ['submitted', 'with_director', 'returned'].includes(status) && status !== st
     setSavedAt(new Date())
     show(status === 'submitted' ? t('submitted_ok') : status === 'with_director' ? t('sent_director_ok') : '✓'); if (done) onDone(); else setA(x => ({ ...x, ...res.data }))
@@ -615,6 +617,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
     <div className="btns" style={{ marginTop: 0, alignItems: 'center' }}><button className="btn" onClick={onDone}>{BK} {t('back')}</button>{a.status && <span className={'pill ' + a.status}>{t(a.status)}</span>}
       <span className="m saved">{autoBusy ? t('saving') : savedAt ? `✓ ${t('saved_at')} ${savedAt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}` : ''}</span></div>
     {a.director_note && ['returned', 'draft', 'with_director'].includes(st) && <div className="card o"><p className="k">{t('director_note')}</p><p>{a.director_note}</p></div>}
+    {isCond(a) && !['returned', 'draft', 'with_director', 'withdrawn'].includes(st) && <div className="card o"><p className="k">✓📝 {t('ok_cond')}</p><p className="m">{t('ok_cond_owe')}</p><p style={{ whiteSpace: 'pre-wrap' }}>{a.director_note.replace(/^[^:]+:\s*/, '')}</p></div>}
     <div className="steps" data-help="steps">{STEPS.map((k, n) => <button key={k} className={(n === step ? 'on ' : '') + (n < 4 && !missing.some(([, s]) => s === n) ? 'done' : '')} onClick={() => go(n)}><i>{n < 4 && !missing.some(([, s]) => s === n) ? '✓' : n + 1}</i><span>{t(k)}</span></button>)}</div>
 
     {step === 0 && <>
@@ -700,6 +703,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       {(step === 4 || !authoring) && <button className="btn" data-help="save" disabled={busy} onClick={() => save(st === 'returned' ? 'returned' : st)}>{t('save')}</button>}
       {step === 4 && !isDir && ['draft', 'returned', 'yellow'].includes(st) && <button className="btn p" data-help="send" disabled={busy} onClick={() => save('with_director')}>{t('send_director')} {NX}</button>}
       {step === 4 && isDir && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && <button className="btn p" data-help="send" disabled={busy} onClick={() => save('submitted')}>{t('submit_room')} {NX}</button>}
+      {step === 4 && isDir && a.id && st === 'with_director' && <button className="btn" data-help="ok_cond" disabled={busy || !note.trim()} title={t('ok_cond_hint')} onClick={() => { cond.current = true; Promise.resolve(save('submitted')).finally(() => { cond.current = false }) }}>✓📝 {t('ok_cond_btn')}</button>}
       {step === 4 && isDir && a.id && st === 'with_director' && <button className="btn y" disabled={busy} onClick={() => save('returned')}>↩ {t('send_back')}</button>}
       {step === 4 && a.id && st === 'draft' && <button className="btn ghost" onClick={del}>{t('delete')}</button>}
       {step === 4 && a.id && st === 'submitted' && <button className="btn ghost" onClick={withdraw}>{t('withdraw')}</button>}
