@@ -242,7 +242,7 @@ function Main({ t, lang, setLang, profile }) {
   }, [])
   const [toast, show] = useToast()
   return <Shell t={t} lang={lang} setLang={setLang} profile={profile} tabs={tabs} tab={tab} setTab={setTab}>
-    <div className={'wrap' + (tab === 'people' ? ' wide' : '')}>
+    <div className={'wrap' + (tab === 'people' || tab === 'gls' ? ' wide' : '')}>
       {tab === 'asks' && ref.cycle && <Asks t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'room' && ref.cycle && <Room t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'gls' && <GLs t={t} lang={lang} profile={profile} refd={ref} deps={profile.role === 'excom' ? ref.departments : myDeps(profile, ref)} show={show} />}

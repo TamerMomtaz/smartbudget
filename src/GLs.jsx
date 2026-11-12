@@ -107,23 +107,22 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
           {lead && w.length > 0 && <button className="btn y" disabled={busy} onClick={() => send(w)}>📤 {t('gl_send_dep')} +{rate}% ({w.length})</button>}
           <button className="btn" onClick={() => excelDep(d)}>📥 {t('gl_xl_dep')}</button>
           {cs.length > 0 && <span className="m">{t('gl_cards')}: {cs.filter(a => glOf(a)).length} / {cs.length} {t('gl_linked')}</span>}</div>
-        {open[d.id] && <div style={{ overflowX: 'auto' }}><table className="tb" style={{ marginTop: 8 }}><thead><tr><th>GL</th><th>{base}</th><th>{next}</th><th></th><th></th></tr></thead><tbody>
+        {cs.length > 0 && <div><p className="k" style={{ marginTop: 14 }}>🃏 {t('gl_cards')}</p><p className="m">{t('gl_cards_hint')}</p>
+          <table className="tb gl-t"><thead><tr><th>{t('gl_card')}</th><th>CAPEX</th><th>OPEX</th><th>GL</th></tr></thead><tbody>
+            {cs.map(a => { const g = glOf(a), sg = !g && guess(a, gls), can = lead || ['draft', 'returned', 'yellow'].includes(a.status)
+              return <tr key={a.id}><td><Tr text={a.title} lang={lang} /><div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}</td>
+                <td>{can ? <select value={g?.id || ''} onChange={e => link(a, Number(e.target.value) || null)} style={{ width: '100%' }}><option value="">{t('gl_new')}</option>{g && !gls.some(l => l.id === g.id) && <option value={g.id}>{g.gl_code} · {g.name}</option>}{gls.map(l => <option key={l.id} value={l.id}>{l.gl_code} · {l.name}</option>)}</select> : <span>{g ? g.gl_code + ' · ' + g.name : t('gl_new')}</span>}
+                  {can && sg && <div><button className="btn ghost sm" onClick={() => link(a, sg.id)}>💡 {t('gl_looks')} {sg.name} ✓</button></div>}</td></tr> })}
+          </tbody></table></div>}
+        {open[d.id] && <div><table className="tb gl-t" style={{ marginTop: 8 }}><thead><tr><th>GL</th><th>{base}</th><th>{next}</th><th></th></tr></thead><tbody>
           {ps.map((p, i) => { const l = p.b || p.n, n2 = p.n, can = canWrite && n2 && !n2.locked
-            return <tr key={i}><td><span className="m">{l.gl_code}</span><div>{l.name}</div>{(p.n?.note || l.note) && <div className={'m' + (/Above the ceiling/.test(p.n?.note || '') ? ' gate' : '')}>{p.n?.note || l.note}</div>}</td>
+            return <tr key={i}><td><span className="m" dir="auto">{l.gl_code}</span><div dir="auto">{l.name}</div>{(p.n?.note || l.note) && <div className={'m' + (/Above the ceiling/.test(p.n?.note || '') ? ' gate' : '')}>{p.n?.note || l.note}</div>}</td>
               <td className="m">{p.b ? fmt(p.b.amount) : '—'}</td>
               <td>{!n2 ? <span className="m">—</span> : can ? <input type="text" inputMode="decimal" style={{ width: 120 }} value={ed[n2.id] ?? String(Number(n2.amount))} onChange={e => setEd({ ...ed, [n2.id]: e.target.value })} onBlur={() => saveAmt(n2)} onKeyDown={e => e.key === 'Enter' && e.target.blur()} /> : fmt(n2.amount)}
                 {p.b && n2 && <div className="m">+15% = {fmt(Math.round(p.b.amount * 1.15))} · +20% = {fmt(Math.round(p.b.amount * 1.2))}</div>}</td>
-              <td><Pct b={p.b} n={n2} /></td>
-              <td style={{ whiteSpace: 'nowrap' }}>{can && <button className="btn ghost sm" title={t('gl_drop')} onClick={() => drop(n2)}>✕ {t('gl_drop')}</button>}
-                {lead && <select value="" onChange={e => e.target.value && move(p, e.target.value)} style={{ maxWidth: 150 }}><option value="">{t('gl_move')}</option>{deps.filter(x => x.id !== d.id).map(x => <option key={x.id} value={x.id}>{nm(x)}</option>)}</select>}</td></tr> })}
+              <td><Pct b={p.b} n={n2} /><div className="gl-act">{can && <button className="btn ghost sm" title={t('gl_drop')} onClick={() => drop(n2)}>✕ {t('gl_drop')}</button>}
+                {lead && <select value="" onChange={e => e.target.value && move(p, e.target.value)} style={{ maxWidth: 150 }}><option value="">{t('gl_move')}</option>{deps.filter(x => x.id !== d.id).map(x => <option key={x.id} value={x.id}>{nm(x)}</option>)}</select>}</div></td></tr> })}
         </tbody></table></div>}
-        {open[d.id] && cs.length > 0 && <div style={{ overflowX: 'auto' }}><p className="k" style={{ marginTop: 14 }}>🃏 {t('gl_cards')}</p><p className="m">{t('gl_cards_hint')}</p>
-          <table className="tb"><thead><tr><th>{t('gl_card')}</th><th>CAPEX</th><th>OPEX</th><th>GL</th></tr></thead><tbody>
-            {cs.map(a => { const g = glOf(a), sg = !g && guess(a, gls), can = lead || ['draft', 'returned', 'yellow'].includes(a.status)
-              return <tr key={a.id}><td><Tr text={a.title} lang={lang} /><div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}</td>
-                <td>{can ? <select value={g?.id || ''} onChange={e => link(a, Number(e.target.value) || null)} style={{ maxWidth: 300 }}><option value="">{t('gl_new')}</option>{g && !gls.some(l => l.id === g.id) && <option value={g.id}>{g.gl_code} · {g.name}</option>}{gls.map(l => <option key={l.id} value={l.id}>{l.gl_code} · {l.name}</option>)}</select> : <span>{g ? g.gl_code + ' · ' + g.name : t('gl_new')}</span>}
-                  {can && sg && <div><button className="btn ghost sm" onClick={() => link(a, sg.id)}>💡 {t('gl_looks')} {sg.name} ✓</button></div>}</td></tr> })}
-          </tbody></table></div>}
       </div> })}
   </>
 }

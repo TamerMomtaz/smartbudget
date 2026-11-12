@@ -493,3 +493,5 @@ html[data-theme=arena] .rat-b,html[data-theme=arena] .rat-teach,html[data-theme=
 .find-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.find-bar input{flex:1;min-width:200px}.find-bar select{max-width:260px}
 
 .tr-mark{font-size:.7em;opacity:.55;cursor:help}
+
+.tb.gl-t{width:100%;table-layout:auto}.tb.gl-t td{overflow-wrap:anywhere}.tb.gl-t td:first-child{width:46%}.gl-act{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}.gl-act select{max-width:150px}
