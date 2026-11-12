@@ -271,9 +271,10 @@ function DeptSelect({ value, onChange, deps, refd, lang, disabled, blank }) {
   </select>
 }
 
+const isRefused = (a) => a.status === 'withdrawn' && /^(Refused|مرفوض)/.test(a.director_note || '')
 function AskRow({ a, t, lang, onOpen, showDept }) {
   return <div className="card ask" onClick={() => onOpen(a)}>
-    <div style={{ flex: 1 }}><div className="t"><Tr text={a.title} lang={lang} /></div><div className="sub">{showDept ? (a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en'] + ' · ') : ''}{a.register_code || a.lane_other || ''} {a.quarter ? '· ' + a.quarter : ''}</div><span className={'pill ' + a.status}>{t(a.status)}</span></div>
+    <div style={{ flex: 1 }}><div className="t"><Tr text={a.title} lang={lang} /></div><div className="sub">{showDept ? (a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en'] + ' · ') : ''}{a.register_code || a.lane_other || ''} {a.quarter ? '· ' + a.quarter : ''}</div><span className={'pill ' + a.status}>{isRefused(a) ? '🚫 ' + t('refused') : t(a.status)}</span></div>
     <div className="amt"><span className="m">{t('capex_lbl')}</span><b>{a.quote_decides ? t('quote_decides').split('—')[0] : fmt(capex(a))}</b><span className="m">{t('opex_lbl')} {fmt(opexYear(a))}</span></div>
   </div>
 }
@@ -359,7 +360,8 @@ function Asks({ t, lang, profile, refd, show }) {
     {!head && list.length > 0 && <div className="find-bar" data-help="find_cards"><input type="search" value={find} onChange={e => setFind(e.target.value)} placeholder={'🔎 ' + t('find_ph')} />
       <select value={pick || ''} onChange={e => setPick(Number(e.target.value) || null)}><option value="">{t('find_all_deps')}</option>{depsHere.map(d => <option key={d.id} value={d.id}>{d[lang === 'ar' ? 'name_ar' : 'name_en']} ({list.filter(a => a.department_id === d.id).length})</option>)}</select>
       {(find || pick) && <><span className="m">{shown.length} {t('find_found')}</span><button className="btn ghost sm" onClick={() => { setFind(''); setPick(null) }}>✕ {t('board_show_all')}</button></>}</div>}
-    {!head && goneHit.length > 0 && <div className="dep-grp"><p className="k">{t('withdrawn')} · {goneHit.length}</p><p className="m">{t('find_gone')}</p>{goneHit.map(a => <AskRow key={a.id} a={a} t={t} lang={lang} onOpen={setEdit} />)}</div>}
+    {gone.filter(isRefused).filter(a => !pick || a.department_id === pick).length > 0 && <div className="dep-grp" data-help="refuse"><p className="k">🚫 {t('refused')} · {gone.filter(isRefused).filter(a => !pick || a.department_id === pick).length}</p><p className="m">{t('rf_list')}</p>{gone.filter(isRefused).filter(a => !pick || a.department_id === pick).map(a => <div key={a.id}><AskRow a={a} t={t} lang={lang} onOpen={setEdit} showDept={!head} /><p className="m" style={{ margin: '-4px 12px 10px' }}>↳ {a.director_note}</p></div>)}</div>}
+    {!head && goneHit.filter(a => !isRefused(a)).length > 0 && <div className="dep-grp"><p className="k">{t('withdrawn')} · {goneHit.length}</p><p className="m">{t('find_gone')}</p>{goneHit.filter(a => !isRefused(a)).map(a => <AskRow key={a.id} a={a} t={t} lang={lang} onOpen={setEdit} />)}</div>}
     {!head && (find || pick) && shown.length === 0 && goneHit.length === 0 && <div className="card"><p className="m">{t('find_none')}</p></div>}
     {!head && pick && <div className="pick-bar"><span>{t('board_showing')} <b>{refd.departments.find(d => d.id === pick)?.[lang === 'ar' ? 'name_ar' : 'name_en']}</b> · {shown.length}</span><button className="btn" onClick={() => setPick(null)}>✕ {t('board_show_all')}</button></div>}
     {list.length > 0 && <div className="tot"><div><span>{t('sum_capex')}</span><b>{fmt(ss.capex)}</b></div><div className="o"><span>{t('sum_opex')}</span><b>{fmt(ss.opex)}</b></div><div><span>{t('sum_year1')}</span><b>{fmt(ss.capex + ss.opex)}</b></div></div>}
@@ -586,6 +588,12 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const open = async (p) => { const { data } = await supabase.storage.from('quotes').createSignedUrl(p, 600); if (data) window.open(data.signedUrl, '_blank') }
   const del = async () => { if (!a.id || !confirm('?')) return; await supabase.from('asks').delete().eq('id', a.id); onDone() }
   const withdraw = async () => { if (!confirm('?')) return; await supabase.from('asks').update({ status: 'withdrawn' }).eq('id', a.id); await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'withdrawn' }); onDone() }
+  // the director refuses a card: it leaves the room and finance's file, but stays in the list with its reason
+  const [rf, setRf] = useState(null)
+  const refuse = async () => { const note = t('refused') + ': ' + t('rf_' + rf.why) + (rf.txt.trim() ? ' — ' + rf.txt.trim() : '')
+    const { error } = await supabase.from('asks').update({ status: 'withdrawn', director_note: note }).eq('id', a.id); if (error) return show(error.message)
+    await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'refused', detail: { why: rf.why, note: rf.txt.trim() || undefined } }); onDone() }
+  const bringBack = async () => { const { error } = await supabase.from('asks').update({ status: 'returned' }).eq('id', a.id); if (error) return show(error.message); await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'brought_back' }); onDone() }
   const oy = opexYear(a), cx = a.quote_decides ? 0 : capex(a)
   // the same amount typed as CAPEX and again as a yearly cost (Mohamed Hamed's pH meter: 40,000 + 40,000)
   const twice = cx > 0 && (oy === cx || (a.opex_items || []).some(x => itemYear(x) === cx || (x.kind === 'tools' && N(x.price) === cx)))
@@ -695,6 +703,12 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       {step === 4 && isDir && a.id && st === 'with_director' && <button className="btn y" disabled={busy} onClick={() => save('returned')}>↩ {t('send_back')}</button>}
       {step === 4 && a.id && st === 'draft' && <button className="btn ghost" onClick={del}>{t('delete')}</button>}
       {step === 4 && a.id && st === 'submitted' && <button className="btn ghost" onClick={withdraw}>{t('withdraw')}</button>}
+      {a.id && ['admin', 'director'].includes(profile.role) && ['draft', 'with_director', 'returned', 'submitted', 'yellow'].includes(st) && !rf && <button className="btn ghost" data-help="refuse" onClick={() => setRf({ why: 'dup', txt: '' })}>🚫 {t('refuse')}</button>}
+      {a.id && profile.role === 'admin' && st === 'withdrawn' && <button className="btn" onClick={bringBack}>↩ {t('rf_back')}</button>}
+      {rf && <div className="card o" style={{ flexBasis: '100%' }}><p className="k">🚫 {t('refuse')}</p><p className="m">{t('rf_hint')}</p>
+        <div className="btns">{['dup', 'unclear', 'price', 'notours', 'other'].map(k => <button key={k} className={'btn sm' + (rf.why === k ? ' p' : ' ghost')} onClick={() => setRf({ ...rf, why: k })}>{t('rf_' + k)}</button>)}</div>
+        <input type="text" style={{ width: '100%', marginTop: 8 }} value={rf.txt} onChange={e => setRf({ ...rf, txt: e.target.value })} placeholder={t('rf_ph')} />
+        <div className="btns" style={{ marginTop: 8 }}><button className="btn y" disabled={rf.why === 'other' && !rf.txt.trim()} onClick={refuse}>🚫 {t('rf_do')}</button><button className="btn ghost" onClick={() => setRf(null)}>{t('cancel')}</button></div></div>}
     </div>}
     {!canEdit && step < 4 && <div className="btns">{step > 0 && <button className="btn" onClick={() => go(step - 1)}>{BK} {t('back_step')}</button>}<button className="btn p" onClick={() => go(step + 1)}>{t('next')} {NX}</button></div>}
     {step === 4 && hist.length > 0 && <div className="card hist"><p className="k">{t('history')}</p>{hist.map(h => <div key={h.id}>{new Date(h.at).toLocaleString()} · {h.event === 'moved' ? `↪ ${t('moved')}: ${h.detail?.from} → ${h.detail?.to}` : h.detail?.status ? t(h.detail.status) : h.event}{h.detail?.note ? ' — ' + h.detail.note : ''} · {h.profiles?.name || h.profiles?.email || ''}</div>)}</div>}
