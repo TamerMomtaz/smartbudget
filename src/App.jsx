@@ -512,13 +512,14 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   // It goes to that department's head as "sent back", with a note, so they own it from here.
   const nmOf = (id) => refd.departments.find(d => d.id === id)?.[lang === 'ar' ? 'name_ar' : 'name_en'] || ''
   const moveDeps = (profile.role === 'admin' ? refd.departments : myDeps(profile, refd)).filter(d => d.id !== a.department_id)
-  const move = async () => {
+  const move = async (keep) => {
     if (!moveTo || busy) return; setBusy(true)
     const from = a.department_id, why = moveNote.trim()
     const msg = `${t('moved_from')} ${nmOf(from)}${why ? ': ' + why : ''}`
-    const { error } = await supabase.from('asks').update({ department_id: moveTo, status: 'returned', director_note: msg, budget_line_id: null }).eq('id', a.id)
+    // keep = the card stays where it is in the flow (for example in the room); only its department changes
+    const { error } = await supabase.from('asks').update(keep === true ? { department_id: moveTo, budget_line_id: null } : { department_id: moveTo, status: 'returned', director_note: msg, budget_line_id: null }).eq('id', a.id)
     if (error) { setBusy(false); show(error.message); return }
-    await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'moved', detail: { from: nmOf(from), to: nmOf(moveTo), note: why || undefined } })
+    await supabase.from('ask_events').insert({ ask_id: a.id, actor_id: profile.id, event: 'moved', detail: { from: nmOf(from), to: nmOf(moveTo), note: why || undefined, ...(keep === true ? { kept_status: st } : {}) } })
     setBusy(false); show('✓ ' + t('moved_ok') + ' ' + nmOf(moveTo)); onDone()
   }
   useEffect(() => {
@@ -610,7 +611,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const F = (p) => <Field a={a} set={set} canEdit={canEdit} t={t} {...p} />
   const go = (n) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const dep = refd.departments.find(d => d.id === a.department_id)
-  const canMove = canEdit && isDir && a.id && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && moveDeps.length > 0
+  const canMove = canEdit && isDir && a.id && ['draft', 'with_director', 'returned', 'yellow', 'submitted', 'pitched'].includes(st) && moveDeps.length > 0
   const R = ({ label, v }) => <div className="rv"><span>{label}</span><div>{v ? <Tr text={String(v)} lang={lang} /> : <i className="m">—</i>}</div></div>
 
   return <>
@@ -694,7 +695,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
       {canMove && <div className="card move" data-help="move_ask"><p className="k">{lang === 'ar' ? '↩' : '↪'} {t('move_title')}</p><p className="m" style={{ marginTop: -4 }}>{t('move_hint')}</p>
         <div className="grid2" style={{ marginTop: 6 }}><label className="f"><span>{t('move_to')}</span><DeptSelect value={moveTo} onChange={setMoveTo} deps={moveDeps} refd={refd} lang={lang} blank /></label>
           <label className="f"><span>{t('move_why')}</span><input value={moveNote} onChange={e => setMoveNote(e.target.value)} placeholder={t('move_why_ph')} /></label></div>
-        <div className="btns" style={{ marginTop: 4 }}><button className="btn y" disabled={!moveTo || busy} onClick={move}>{lang === 'ar' ? '↩' : '↪'} {t('move_btn')}{moveTo ? ' ' + nmOf(moveTo) : ''}</button></div></div>}
+        <div className="btns" style={{ marginTop: 4 }}>{['submitted', 'pitched', 'yellow', 'with_director'].includes(st) && <button className="btn p" disabled={!moveTo || busy} onClick={() => move(true)}>{lang === 'ar' ? '↩' : '↪'} {t('move_keep')}{moveTo ? ' ' + nmOf(moveTo) : ''}</button>}<button className="btn y" disabled={!moveTo || busy} onClick={() => move()}>{lang === 'ar' ? '↩' : '↪'} {t('move_btn')}{moveTo ? ' ' + nmOf(moveTo) : ''}</button></div></div>}
     </>}
 
     {canEdit && <div className="btns">
