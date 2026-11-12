@@ -4,6 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { supabase } from './supabase'
 import { fmt } from './i18n'
 import * as XLSX from 'xlsx'
+import { Tr } from './Tr'
 
 const r2 = (x) => Math.round(x * 100) / 100
 const OPEX = ['opex_people', 'opex_training', 'opex_consumables', 'opex_maintenance', 'opex_licences', 'opex_other']
@@ -119,7 +120,7 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
         {open[d.id] && cs.length > 0 && <div style={{ overflowX: 'auto' }}><p className="k" style={{ marginTop: 14 }}>🃏 {t('gl_cards')}</p><p className="m">{t('gl_cards_hint')}</p>
           <table className="tb"><thead><tr><th>{t('gl_card')}</th><th>CAPEX</th><th>OPEX</th><th>GL</th></tr></thead><tbody>
             {cs.map(a => { const g = glOf(a), sg = !g && guess(a, gls), can = lead || ['draft', 'returned', 'yellow'].includes(a.status)
-              return <tr key={a.id}><td>{a.title}<div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}</td>
+              return <tr key={a.id}><td><Tr text={a.title} lang={lang} /><div className="m">{t(a.status)}</div></td><td>{Number(a.capex_amount) ? fmt(a.capex_amount) : '—'}</td><td>{opexYear(a) ? fmt(opexYear(a)) : '—'}</td>
                 <td>{can ? <select value={g?.id || ''} onChange={e => link(a, Number(e.target.value) || null)} style={{ maxWidth: 300 }}><option value="">{t('gl_new')}</option>{g && !gls.some(l => l.id === g.id) && <option value={g.id}>{g.gl_code} · {g.name}</option>}{gls.map(l => <option key={l.id} value={l.id}>{l.gl_code} · {l.name}</option>)}</select> : <span>{g ? g.gl_code + ' · ' + g.name : t('gl_new')}</span>}
                   {can && sg && <div><button className="btn ghost sm" onClick={() => link(a, sg.id)}>💡 {t('gl_looks')} {sg.name} ✓</button></div>}</td></tr> })}
           </tbody></table></div>}

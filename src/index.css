@@ -491,3 +491,5 @@ html[data-theme=arena] .rat-b,html[data-theme=arena] .rat-teach,html[data-theme=
 .card.book input,.card.book select{width:100%;box-sizing:border-box}
 
 .find-bar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin:12px 0}.find-bar input{flex:1;min-width:200px}.find-bar select{max-width:260px}
+
+.tr-mark{font-size:.7em;opacity:.55;cursor:help}

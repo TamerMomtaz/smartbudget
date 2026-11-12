@@ -9,6 +9,7 @@ import Budgootee from './Budgootee'
 import { RatifyCard, Rulebook, useRatifier } from './Ratifier'
 import { chime, soundOn, setSound } from './cinema'
 import GLs from './GLs'
+import { Tr } from './Tr'
 
 const QUARTERS = ['Q1 2027', 'Q2 2027', 'Q3 2027', 'Q4 2027', '2028']
 const OPEX = ['opex_people', 'opex_training', 'opex_consumables', 'opex_maintenance', 'opex_licences', 'opex_other']
@@ -272,7 +273,7 @@ function DeptSelect({ value, onChange, deps, refd, lang, disabled, blank }) {
 
 function AskRow({ a, t, lang, onOpen, showDept }) {
   return <div className="card ask" onClick={() => onOpen(a)}>
-    <div style={{ flex: 1 }}><div className="t">{a.title}</div><div className="sub">{showDept ? (a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en'] + ' · ') : ''}{a.register_code || a.lane_other || ''} {a.quarter ? '· ' + a.quarter : ''}</div><span className={'pill ' + a.status}>{t(a.status)}</span></div>
+    <div style={{ flex: 1 }}><div className="t"><Tr text={a.title} lang={lang} /></div><div className="sub">{showDept ? (a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en'] + ' · ') : ''}{a.register_code || a.lane_other || ''} {a.quarter ? '· ' + a.quarter : ''}</div><span className={'pill ' + a.status}>{t(a.status)}</span></div>
     <div className="amt"><span className="m">{t('capex_lbl')}</span><b>{a.quote_decides ? t('quote_decides').split('—')[0] : fmt(capex(a))}</b><span className="m">{t('opex_lbl')} {fmt(opexYear(a))}</span></div>
   </div>
 }
@@ -600,7 +601,7 @@ function AskForm({ t: tt, lang, profile, refd, ask, show, onDone }) {
   const go = (n) => { setStep(n); window.scrollTo({ top: 0, behavior: 'smooth' }) }
   const dep = refd.departments.find(d => d.id === a.department_id)
   const canMove = canEdit && isDir && a.id && ['draft', 'with_director', 'returned', 'yellow'].includes(st) && moveDeps.length > 0
-  const R = ({ label, v }) => <div className="rv"><span>{label}</span><div>{v ? String(v) : <i className="m">—</i>}</div></div>
+  const R = ({ label, v }) => <div className="rv"><span>{label}</span><div>{v ? <Tr text={String(v)} lang={lang} /> : <i className="m">—</i>}</div></div>
 
   return <>
     <div className="btns" style={{ marginTop: 0, alignItems: 'center' }}><button className="btn" onClick={onDone}>{BK} {t('back')}</button>{a.status && <span className={'pill ' + a.status}>{t(a.status)}</span>}
@@ -749,13 +750,13 @@ function Room({ t, lang, profile, refd, show }) {
     </div>
     <div className="hero">
       <p className="k">{a.departments?.[lang === 'ar' ? 'name_ar' : 'name_en']} · {a.register_code || a.lane_other || ''} · {a.quarter || ''} · <span className={'pill ' + a.status}>{t(a.status)}</span></p>
-      <h2>{a.title}</h2>
-      <p>{a.what_text}</p>
+      <h2><Tr text={a.title} lang={lang} /></h2>
+      <p><Tr text={a.what_text} lang={lang} /></p>
       <div className="tot"><div style={{ background: '#115585', color: '#fff' }}><span style={{ color: '#C9D6DF' }}>{t('capex_lbl')} · {t(`c_${a.capex_class}`)}</span><b style={{ color: '#fff' }}>{a.quote_decides ? t('quote_decides').split('—')[1] : fmt(capex(a))}</b></div><div style={{ background: '#C4500F', color: '#fff' }}><span style={{ color: '#FDEEE4' }}>{t('opex_lbl')}</span><b style={{ color: '#fff' }}>{fmt(oy)}</b></div><div style={{ background: '#115585', color: '#fff' }}><span style={{ color: '#C9D6DF' }}>{t('year_one')}</span><b style={{ color: '#fff' }}>{fmt(capex(a) + oy)}</b></div></div>
     </div>
     <div className="grid2" style={{ marginTop: 12 }}>
-      <div className="card"><p className="k">{t('s_return')}</p><p>{a.return_text}</p><p className="m">{a.return_when}</p><p className="k">{t('s_measure')}</p><p>{a.measure_text}</p><p className="m">{a.measure_when}</p></div>
-      <div className="card"><p className="k">{t('ifnot_h')}</p><p>{a.if_not_funded}</p><p className="k">{t('stop_h')}</p><p>{a.what_we_stop}</p>{a.opex_notes && <><p className="k">{t('opex_notes')}</p><p className="m">{a.opex_notes}</p></>}{a.attachments?.length > 0 && <p className="m">📎 {a.attachments.map(f => f.name).join(', ')}</p>}</div>
+      <div className="card"><p className="k">{t('s_return')}</p><p><Tr text={a.return_text} lang={lang} /></p><p className="m">{a.return_when}</p><p className="k">{t('s_measure')}</p><p><Tr text={a.measure_text} lang={lang} /></p><p className="m">{a.measure_when}</p></div>
+      <div className="card"><p className="k">{t('ifnot_h')}</p><p><Tr text={a.if_not_funded} lang={lang} /></p><p className="k">{t('stop_h')}</p><p><Tr text={a.what_we_stop} lang={lang} /></p>{a.opex_notes && <><p className="k">{t('opex_notes')}</p><p className="m">{a.opex_notes}</p></>}{a.attachments?.length > 0 && <p className="m">📎 {a.attachments.map(f => f.name).join(', ')}</p>}</div>
     </div>
     <div className="grid2">
       <div className="card"><p className="k">{t('your_score')}</p>
