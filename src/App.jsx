@@ -245,7 +245,7 @@ function Main({ t, lang, setLang, profile }) {
     <div className={'wrap' + (tab === 'people' || tab === 'gls' ? ' wide' : '')}>
       {tab === 'asks' && ref.cycle && <Asks t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'room' && ref.cycle && <Room t={t} lang={lang} profile={profile} refd={ref} show={show} />}
-      {tab === 'gls' && <GLs t={t} lang={lang} profile={profile} refd={ref} deps={profile.role === 'excom' ? ref.departments : myDeps(profile, ref)} show={show} />}
+      {tab === 'gls' && <GLs t={t} lang={lang} profile={profile} refd={ref} deps={profile.role === 'excom' ? ref.departments : myDeps(profile, ref)} home={myDirectorate(profile, ref) || null} show={show} />}
       {tab === 'budget' && <Budget t={t} lang={lang} profile={profile} refd={ref} show={show} />}
       {tab === 'out' && ref.cycle && <Outputs t={t} lang={lang} profile={profile} refd={ref} />}
       {tab === 'people' && <People t={t} lang={lang} refd={ref} show={show} />}

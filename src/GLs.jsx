@@ -21,7 +21,8 @@ function guess(a, gls) {
 }
 const scale = (m, k) => Array.isArray(m) && m.length === 12 ? m.map(v => r2(Number(v) * k)) : null
 
-export default function GLs({ t, lang, profile, refd, deps, show }) {
+export default function GLs({ t, lang, profile, refd, deps: allDeps, home, show }) {
+  const deps = home ? allDeps.filter(d => d.directorate_id === home) : allDeps // a director's page and file hold his own directorate only
   const next = Number(String(refd.cycle?.name || '').match(/20\d\d/)?.[0]) || new Date().getFullYear() + 1, base = next - 1
   const lead = profile.role === 'admin' || profile.role === 'director', canWrite = profile.role !== 'excom'
   const [rows, setRows] = useState([]), [asks, setAsks] = useState([]), [rate, setRate] = useState(15), [busy, setBusy] = useState(false), [open, setOpen] = useState({}), [ed, setEd] = useState({}), [dep, setDep] = useState('')
@@ -90,14 +91,14 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
   const depData = (d) => {
     const cs = cardsOf(d.id), inGl = (code) => asks.filter(a => { const g = glOf(a); return g && g.gl_code === code && (g.department_id === d.id || a.department_id === d.id) })
     const opex = pairs(d.id).map(p => { const l = p.b || p.n; return { gl: l.gl_code || '', name: l.name, base: p.b ? Number(p.b.amount) : 0, next: p.n ? Number(p.n.amount) : null, note: p.n?.note || '', cards: inGl(l.gl_code).map(a => a.title + ' (' + fmt(opexYear(a)) + ')').join('\n') } })
-    cs.filter(a => !glOf(a) && opexYear(a) > 0).forEach(a => opex.push({ gl: '', name: a.title, base: 0, next: opexYear(a), note: 'New running cost from a request, not in a ledger account yet.', cards: '' }))
+    const fresh = cs.filter(a => !glOf(a) && opexYear(a) > 0).map(a => ({ name: a.title, next: opexYear(a), note: Number(a.capex_amount) > 0 ? 'Running cost of a purchase on the CAPEX tab.' : '' }))
     const capex = cs.filter(a => Number(a.capex_amount) > 0 || a.quote_decides).map(a => ({ title: a.title, what: a.what_text || '', cls: a.capex_class ? t('c_' + a.capex_class) : '', amount: Number(a.capex_amount) || 0, quarter: a.quarter || '', status: t(a.status), opex: opexYear(a) || null, note: a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : '' }))
-    return { code: d.code || String(d.id), name: d.name_en, opex, capex }
+    return { code: d.code || String(d.id), name: d.name_en, strategic: d.code === 'STR', opex, fresh, capex }
   }
   const excelOut = async (list, file) => {
     if (busy) return; setBusy(true)
     try { const ExcelJS = (await import('exceljs')).default, { buildBook } = await import('./xl')
-      const data = list.map(depData).filter(x => x.opex.length || x.capex.length); if (!data.length) { show(t('gl_none')); return }
+      const data = list.map(depData).filter(x => x.opex.length || x.fresh.length || x.capex.length); if (!data.length) { show(t('gl_none')); return }
       const wb = buildBook(ExcelJS, data, { base, next, date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), scope: 'Plant' })
       const url = URL.createObjectURL(new Blob([await wb.xlsx.writeBuffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })), a = document.createElement('a')
       a.href = url; a.download = file; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000)

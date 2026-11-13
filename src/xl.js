@@ -32,7 +32,7 @@ function page(ws, headRow) {
   ws.pageSetup.printTitlesRow = headRow + ':' + headRow
   ws.headerFooter = { oddFooter: '&L&8Al Manar · Budget · prepared in smartBudget&R&8Page &P of &N' }
 }
-const sums = (d) => { const b = d.opex.reduce((s, r) => s + (r.base || 0), 0), n = d.opex.reduce((s, r) => s + (r.next || 0), 0), c = d.capex.reduce((s, r) => s + (r.amount || 0), 0); return { b, n, c } }
+const sums = (d) => { const b = d.opex.reduce((s, r) => s + (r.base || 0), 0), n = d.opex.reduce((s, r) => s + (r.next || 0), 0), f = (d.fresh || []).reduce((s, r) => s + (r.next || 0), 0), c = d.capex.reduce((s, r) => s + (r.amount || 0), 0); return { b, n, f, c } }
 const tab = (s) => String(s).replace(/[\\/?*[\]:]/g, ' ').slice(0, 31)
 
 function opexSheet(wb, d, o, name) {
@@ -45,10 +45,16 @@ function opexSheet(wb, d, o, name) {
     row.getCell(1).alignment = { vertical: 'top', horizontal: 'center' }
     if (p != null && p > 0.2001) { row.getCell(6).font = { name: 'Calibri', size: 11, bold: true, color: { argb: RED } }; row.getCell(5).font = { name: 'Calibri', size: 11, bold: true, color: { argb: RED } } } else if (p != null && p > 0.1501) row.getCell(6).font = { name: 'Calibri', size: 11, bold: true, color: { argb: AMBER } }
     if ((r.base || 0) < 1000 && r.next) { row.getCell(6).value = 'New'; row.getCell(6).font = { name: 'Calibri', size: 11, bold: true, color: { argb: AMBER } }; row.getCell(5).font = { name: 'Calibri', size: 11 } } })
-  const s = sums(d), tr = 5 + d.opex.length
-  total(ws, tr, ['', 'Total', '', s.b, s.n, pct(s.b, s.n), '', ''], F)
+  const s = sums(d); let tr = 5 + d.opex.length
+  total(ws, tr, ['', 'Total of ledger accounts', '', s.b, s.n, pct(s.b, s.n), '', ''], F)
+  if ((d.fresh || []).length) {
+    const h = ws.getCell(tr + 2, 2); h.value = 'New running costs asked in requests (not in any ledger account, shown apart and not counted in the change above)'; h.font = { name: 'Calibri', size: 11, bold: true, color: { argb: NAVY } }
+    head(ws, tr + 3, ['#', '', 'Request', '', String(o.next), '', '', 'Note'])
+    d.fresh.forEach((r, i) => { const row = body(ws, tr + 4 + i, [i + 1, '', r.name, null, r.next, null, '', r.note || ''], F, i); row.getCell(1).alignment = { vertical: 'top', horizontal: 'center' } })
+    total(ws, tr + 4 + d.fresh.length, ['', 'Total of new running costs', '', null, s.f, null, '', ''], F)
+    tr = tr + 4 + d.fresh.length
+  }
   const k = ws.getCell(tr + 2, 2); k.value = 'Red = above +20%, needs approval.  Amber = between +15% and +20%.  New = almost no spending on this account in ' + o.base + ', so there is no base to compare.'; k.font = { name: 'Calibri', size: 9, italic: true, color: { argb: GREY } }
-  ws.autoFilter = { from: { row: 4, column: 1 }, to: { row: 4, column: 8 } }
   page(ws, 4); return ws
 }
 function capexSheet(wb, d, o, name) {
@@ -66,21 +72,32 @@ function capexSheet(wb, d, o, name) {
 }
 function summarySheet(wb, deps, o, heading) {
   const ws = wb.addWorksheet('Summary', { properties: { tabColor: { argb: GOLD } } })
-  ws.columns = [{ width: 6 }, { width: 44 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 18 }, { width: 20 }]
-  title(ws, heading, `Summary · OPEX ${o.base} against ${o.next}, and CAPEX asked for ${o.next} · EGP · ${o.date}`, 7)
-  head(ws, 4, ['#', deps.length > 1 ? 'Department' : 'Section', 'OPEX ' + o.base, 'OPEX ' + o.next, 'Change', 'CAPEX ' + o.next, 'Total asked ' + o.next])
-  const F = [null, null, NUM, NUM, PCT, NUM, NUM]; let B = 0, N = 0, C = 0
-  deps.forEach((d, i) => { const s = sums(d); B += s.b; N += s.n; C += s.c; const row = body(ws, 5 + i, [i + 1, d.name, s.b, s.n, pct(s.b, s.n), s.c, s.n + s.c], F, i); row.getCell(1).alignment = { vertical: 'top', horizontal: 'center' } })
-  total(ws, 5 + deps.length, ['', 'Total', B, N, pct(B, N), C, N + C], F)
-  const notes = ['How to read this file', '• OPEX: one row per ledger account, as in finance\'s own sheet, with ' + o.base + ' beside ' + o.next + '.', '• Finance\'s rule: +15% for inflation, +20% at the most. Anything above is shown in red and needs approval.', '• CAPEX: every new purchase or project, largest first, with its yearly running cost if it has one.', '• Each department has two tabs: OPEX and CAPEX.']
-  notes.forEach((x, i) => { const c = ws.getCell(8 + deps.length + i, 2); ws.mergeCells(8 + deps.length + i, 2, 8 + deps.length + i, 7); c.value = x; c.font = { name: 'Calibri', size: i ? 10 : 11, bold: !i, color: { argb: i ? GREY : NAVY } } })
+  ws.columns = [{ width: 6 }, { width: 44 }, { width: 18 }, { width: 18 }, { width: 12 }, { width: 22 }, { width: 18 }]
+  title(ws, heading, `Summary · running costs ${o.base} against ${o.next}, and what is asked for ${o.next} · EGP · ${o.date}`, 7)
+  const F = [null, null, NUM, NUM, PCT, NUM, NUM], normal = deps.filter(d => !d.strategic), strat = deps.filter(d => d.strategic)
+  let r = 4
+  if (normal.length) {
+    head(ws, r, ['#', normal.length > 1 ? 'Department' : 'Section', 'OPEX ' + o.base, 'OPEX ' + o.next, 'Change', 'New running costs asked', 'CAPEX asked ' + o.next])
+    let B = 0, N = 0, Fr = 0, C = 0
+    normal.forEach((d, i) => { const s = sums(d); B += s.b; N += s.n; Fr += s.f; C += s.c; const row = body(ws, r + 1 + i, [i + 1, d.name, s.b, s.n, pct(s.b, s.n), s.f || null, s.c || null], F, i); row.getCell(1).alignment = { vertical: 'top', horizontal: 'center' } })
+    r = r + 1 + normal.length; total(ws, r, ['', 'Total', B, N, pct(B, N), Fr || null, C || null], F); r += 2
+  }
+  if (strat.length) {
+    const h = ws.getCell(r, 2); ws.mergeCells(r, 2, r, 7); h.value = "Strategic direction: large one-off projects, shown apart and decided separately. Not part of the departments' budgets above."; h.font = { name: 'Calibri', size: 11, bold: true, color: { argb: NAVY } }
+    head(ws, r + 1, ['#', 'Strategic project', '', '', 'Quarter', 'Running cost / year', 'CAPEX asked ' + o.next])
+    const items = strat.flatMap(d => d.capex).sort((a, b) => (b.amount || 0) - (a.amount || 0)), SF = [null, null, null, null, null, NUM, NUM]
+    items.forEach((x, i) => { const row = body(ws, r + 2 + i, [i + 1, x.title, null, null, x.quarter || '', x.opex || null, x.amount || 0], SF, i); ws.mergeCells(r + 2 + i, 2, r + 2 + i, 4); row.getCell(1).alignment = { vertical: 'top', horizontal: 'center' }; row.getCell(5).alignment = { vertical: 'top', horizontal: 'center' } })
+    r = r + 2 + items.length; total(ws, r, ['', 'Total strategic', '', '', '', items.reduce((s, x) => s + (x.opex || 0), 0) || null, items.reduce((s, x) => s + (x.amount || 0), 0)], SF); r += 2
+  }
+  const notes = ['How to read this file', "• OPEX: one row per ledger account, as in finance's own sheet, with " + o.base + ' beside ' + o.next + '. The change compares the same accounts in both years.', "• Finance's rule: +15% for inflation, +20% at the most. Anything above is shown in red and needs approval.", '• New running costs asked: yearly costs requested for ' + o.next + " that are not in any ledger account yet. They are listed apart, under each department's OPEX tab.", '• CAPEX: every new purchase or project, largest first, with its yearly running cost if it has one.', "• Strategic projects are listed apart and are not added to the departments' totals."]
+  notes.forEach((x, i) => { const c = ws.getCell(r + i, 2); ws.mergeCells(r + i, 2, r + i, 7); c.value = x; c.font = { name: 'Calibri', size: i ? 10 : 11, bold: !i, color: { argb: i ? GREY : NAVY } } })
   page(ws, 4); return ws
 }
-// deps: [{ code, name, opex: [{ gl, name, base, next, note, cards }], capex: [{ title, what, cls, amount, quarter, status, opex, note }] }]
+// deps: [{ code, name, strategic, opex: [{ gl, name, base, next, note, cards }], fresh: [{ name, next, note }], capex: [{ title, what, cls, amount, quarter, status, opex, note }] }]
 export function buildBook(ExcelJS, deps, o) {
   const wb = new ExcelJS.Workbook(); wb.creator = 'smartBudget'; wb.created = new Date()
-  const one = deps.length === 1
-  summarySheet(wb, deps, o, one ? `${deps[0].name} · Budget ${o.next}` : `${o.scope || 'Plant'} · Budget ${o.next}`)
-  deps.forEach(d => { opexSheet(wb, d, o, one ? 'OPEX ' + o.next : d.code + ' OPEX'); capexSheet(wb, d, o, one ? 'CAPEX ' + o.next : d.code + ' CAPEX') })
+  const one = deps.length === 1, ordered = [...deps.filter(d => !d.strategic), ...deps.filter(d => d.strategic)]
+  summarySheet(wb, ordered, o, one ? `${deps[0].name} · Budget ${o.next}` : `${o.scope || 'Plant'} · Budget ${o.next}`)
+  ordered.forEach(d => { if (d.opex.length || (d.fresh || []).length) opexSheet(wb, d, o, one ? 'OPEX ' + o.next : d.code + ' OPEX'); capexSheet(wb, d, o, one ? 'CAPEX ' + o.next : d.code + ' CAPEX') })
   return wb
 }
