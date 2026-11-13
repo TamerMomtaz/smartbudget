@@ -85,22 +85,25 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
     const { error } = await supabase.from('asks').update(patch).eq('id', a.id); if (error) show(error.message); else { setAsks(xs => xs.map(x => x.id === a.id ? { ...x, ...patch } : x)); show('✓') }
   }
   // what was promised to finance: one Excel per department, OPEX (his GLs) and CAPEX (the cards)
-  const excelDep = (d) => {
-    // the purchase (CAPEX) of every card goes on the CAPEX tab; its yearly cost goes inside its GL, or as a new row when it has no GL
-    const cs = cardsOf(d.id), wb = XLSX.utils.book_new(), inGl = (code) => asks.filter(a => { const g = glOf(a); return g && g.gl_code === code && (g.department_id === d.id || a.department_id === d.id) })
-    const op = pairs(d.id).map(p => { const l = p.b || p.n, b = p.b ? Number(p.b.amount) : 0, n = p.n ? Number(p.n.amount) : null
-      return [l.gl_code || '', l.name, b, n, b && n != null ? Math.round(1000 * (n - b) / b) / 10 : null, p.n?.note || '', inGl(l.gl_code).map(a => a.title).join(' | ')] })
-    const fresh = cs.filter(a => !glOf(a) && opexYear(a) > 0).map(a => ['', a.title, null, opexYear(a), null, 'New running cost from a card, not in a GL', ''])
-    const all = [...op, ...fresh], tot = (i) => all.reduce((s, r) => s + (Number(r[i]) || 0), 0)
-    const w1 = XLSX.utils.aoa_to_sheet([['Ledger account', 'Name', base, next, 'Change %', 'Note', 'Cards inside this GL'], ...all, ['Grand Total', '', tot(2), tot(3), tot(2) ? Math.round(1000 * (tot(3) - tot(2)) / tot(2)) / 10 : null, '', '']])
-    w1['!cols'] = [{ wch: 36 }, { wch: 46 }, { wch: 14 }, { wch: 14 }, { wch: 10 }, { wch: 90 }, { wch: 60 }]
-    XLSX.utils.book_append_sheet(wb, w1, 'OPEX ' + next)
-    const cx = cs.filter(a => Number(a.capex_amount) > 0 || a.quote_decides).map(a => [d.name_ar || d.name_en, a.title, a.what_text || '', a.capex_class || '', Number(a.capex_amount) || 0, a.quarter || '', t(a.status), opexYear(a) || null, a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : ''])
-    const w2 = XLSX.utils.aoa_to_sheet([['القسم', 'البند', 'Items', 'النوع', 'القيمة', 'Quarter', 'Status', 'OPEX / year', 'Note'], ...cx, ['Grand Total', '', '', '', cx.reduce((s, r) => s + r[4], 0)]])
-    w2['!cols'] = [{ wch: 28 }, { wch: 50 }, { wch: 50 }, { wch: 12 }, { wch: 14 }, { wch: 10 }, { wch: 16 }, { wch: 14 }, { wch: 14 }]
-    XLSX.utils.book_append_sheet(wb, w2, 'CAPEX ' + next)
-    XLSX.writeFile(wb, `Budget_${next}_${d.code || d.name_en}.xlsx`)
+  // the data of one department for the Excel: its GLs (OPEX) and its cards' purchases (CAPEX)
+  // the purchase of every card goes on the CAPEX tab; its yearly cost goes inside its GL, or as a new row when it has no GL
+  const depData = (d) => {
+    const cs = cardsOf(d.id), inGl = (code) => asks.filter(a => { const g = glOf(a); return g && g.gl_code === code && (g.department_id === d.id || a.department_id === d.id) })
+    const opex = pairs(d.id).map(p => { const l = p.b || p.n; return { gl: l.gl_code || '', name: l.name, base: p.b ? Number(p.b.amount) : 0, next: p.n ? Number(p.n.amount) : null, note: p.n?.note || '', cards: inGl(l.gl_code).map(a => a.title + ' (' + fmt(opexYear(a)) + ')').join('\n') } })
+    cs.filter(a => !glOf(a) && opexYear(a) > 0).forEach(a => opex.push({ gl: '', name: a.title, base: 0, next: opexYear(a), note: 'New running cost from a request, not in a ledger account yet.', cards: '' }))
+    const capex = cs.filter(a => Number(a.capex_amount) > 0 || a.quote_decides).map(a => ({ title: a.title, what: a.what_text || '', cls: a.capex_class ? t('c_' + a.capex_class) : '', amount: Number(a.capex_amount) || 0, quarter: a.quarter || '', status: t(a.status), opex: opexYear(a) || null, note: a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : '' }))
+    return { code: d.code || String(d.id), name: d.name_en, opex, capex }
   }
+  const excelOut = async (list, file) => {
+    if (busy) return; setBusy(true)
+    try { const ExcelJS = (await import('exceljs')).default, { buildBook } = await import('./xl')
+      const data = list.map(depData).filter(x => x.opex.length || x.capex.length); if (!data.length) { show(t('gl_none')); return }
+      const wb = buildBook(ExcelJS, data, { base, next, date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), scope: 'Plant' })
+      const url = URL.createObjectURL(new Blob([await wb.xlsx.writeBuffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })), a = document.createElement('a')
+      a.href = url; a.download = file; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000)
+    } catch (e) { show(String(e.message || e)) } finally { setBusy(false) }
+  }
+  const excelDep = (d) => excelOut([d], `Budget_${next}_${d.code || d.name_en}.xlsx`)
   const mine = deps.filter(d => of(d.id, base).length || of(d.id, next).length || cardsOf(d.id).length || profile.role === 'head')
   const seen = dep ? mine.filter(d => d.id === Number(dep)) : mine
   const waiting = mine.flatMap(d => toSend(d.id))
@@ -111,6 +114,7 @@ export default function GLs({ t, lang, profile, refd, deps, show }) {
         {lead && <><label className="m" style={{ display: 'flex', gap: 6, alignItems: 'center' }}>{t('gl_rate')} <select value={rate} onChange={e => setRate(Number(e.target.value))}><option value={0}>0%</option><option value={15}>+15%</option><option value={20}>+20%</option></select></label>
           <button className="btn p" disabled={busy || !waiting.length} onClick={() => send(waiting)}>📤 {t('gl_send_all')} ({waiting.length})</button></>}
         {mine.length > 1 && <select value={dep} onChange={e => setDep(e.target.value)} style={{ maxWidth: 280 }}><option value="">{t('gl_all_deps')}</option>{mine.map(d => <option key={d.id} value={d.id}>{nm(d)}</option>)}</select>}
+        <button className="btn p" disabled={busy} onClick={() => excelOut(seen, seen.length === 1 ? `Budget_${next}_${seen[0].code || seen[0].name_en}.xlsx` : `Budget_${next}_all_departments.xlsx`)}>📥 {t('gl_xl_all')}</button>
         <button className="btn" onClick={() => excel(next)}>📥 Excel {next}</button><button className="btn ghost" onClick={() => excel(base)}>📥 Excel {base}</button></div></div>
     {mine.length === 0 && <div className="card"><p className="m">{t('gl_none')}</p></div>}
     {seen.map(d => { const cs = cardsOf(d.id), gls = of(d.id, base).length ? of(d.id, base) : of(d.id, next); const ps = pairs(d.id), b = sum(of(d.id, base)), n = sum(of(d.id, next)), w = toSend(d.id), sent = of(d.id, next).length
