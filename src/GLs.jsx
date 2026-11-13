@@ -101,7 +101,7 @@ export default function GLs({ t, lang, profile, refd, deps: allDeps, home, show 
     if (busy) return; setBusy(true)
     try { const ExcelJS = (await import('exceljs')).default, { buildBook } = await import('./xl')
       const data = list.map(depData).filter(x => x.opex.length || x.fresh.length || x.capex.length); if (!data.length) { show(t('gl_none')); return }
-      const wb = buildBook(ExcelJS, data, { base, next, date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), scope: 'Plant', notes: list.length > 1 ? ["Car licences (ledger 3405009, 455,103 in finance's " + base + ' sheet for the factory) are budgeted by Logistics under Supply Chain and are not in this file.'] : [] })
+      const wb = buildBook(ExcelJS, data, { base, next, date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), scope: 'Plant' })
       const url = URL.createObjectURL(new Blob([await wb.xlsx.writeBuffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })), a = document.createElement('a')
       a.href = url; a.download = file; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000)
     } catch (e) { show(String(e.message || e)) } finally { setBusy(false) }
