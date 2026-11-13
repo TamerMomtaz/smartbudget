@@ -89,8 +89,10 @@ export default function GLs({ t, lang, profile, refd, deps: allDeps, home, show 
   // the data of one department for the Excel: its GLs (OPEX) and its cards' purchases (CAPEX)
   // the purchase of every card goes on the CAPEX tab; its yearly cost goes inside its GL, or as a new row when it has no GL
   const depData = (d) => {
-    const cs = cardsOf(d.id), inGl = (code) => asks.filter(a => { const g = glOf(a); return g && g.gl_code === code && (g.department_id === d.id || a.department_id === d.id) })
-    const opex = pairs(d.id).map(p => { const l = p.b || p.n; return { gl: l.gl_code || '', name: l.name, base: p.b ? Number(p.b.amount) : 0, next: p.n ? Number(p.n.amount) : null, note: p.n?.note || '', cards: inGl(l.gl_code).map(a => a.title + ' (' + fmt(opexYear(a)) + ')').join('\n') } })
+    // only the cards filed on this very line, and only their yearly cost: a purchase filed here by mistake stays on the CAPEX tab
+    const cs = cardsOf(d.id), inGl = (p) => asks.filter(a => a.budget_line_id && (a.budget_line_id === p.n?.id || a.budget_line_id === p.b?.id) && opexYear(a) > 0)
+    const opex = pairs(d.id).map(p => { const l = p.b || p.n, cards = inGl(p), ask = cards.reduce((s, a) => s + opexYear(a), 0), next = p.n ? Number(p.n.amount) : null, old = /^Asked in cards/i.test(p.n?.note || '')
+      return { gl: l.gl_code || '', name: l.name, base: p.b ? Number(p.b.amount) : 0, next, note: next != null && ask > next ? 'Requests ask ' + fmt(ask) + ', ' + fmt(ask - next) + ' above this account.' : old ? '' : (p.n?.note || ''), cards: cards.map(a => a.title + ' (' + fmt(opexYear(a)) + ')').join('\n') } }).filter(r => r.base || r.next || r.cards)
     const fresh = cs.filter(a => !glOf(a) && opexYear(a) > 0).map(a => ({ name: a.title, next: opexYear(a), note: Number(a.capex_amount) > 0 ? 'Running cost of a purchase on the CAPEX tab.' : '' }))
     const capex = cs.filter(a => Number(a.capex_amount) > 0 || a.quote_decides).map(a => ({ title: a.title, what: a.what_text || '', cls: a.capex_class ? t('c_' + a.capex_class) : '', amount: Number(a.capex_amount) || 0, quarter: a.quarter || '', status: t(a.status), opex: opexYear(a) || null, note: a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : '' }))
     return { code: d.code || String(d.id), name: d.name_en, strategic: d.code === 'STR', opex, fresh, capex }
