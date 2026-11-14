@@ -9,6 +9,26 @@ import { Tr } from './Tr'
 const r2 = (x) => Math.round(x * 100) / 100
 const OPEX = ['opex_people', 'opex_training', 'opex_consumables', 'opex_maintenance', 'opex_licences', 'opex_other']
 const opexYear = (a) => OPEX.reduce((s, k) => s + Number(a[k] || 0), 0)
+// for the guide page of the finance file: who owns each plant budget and what it covers (Tee, Nov 2026)
+const OWNERS = {
+  PRD: ['Mr. Mahmoud Badawi', 'Fills and packs the finished products. It receives the bulk product from the two manufacturing units below.'],
+  BFC: ['Eng. Mohammed Hamid', 'Manufactures brake fluids and coolants, in all their SKUs, and hands them to filling.'],
+  BEO: ['Eng. Mahmoud Mohammed', 'Blends engine oils and lubricants and hands them to filling.'],
+  LAB: ['Eng. Ahmed Sami', 'Research and development, and laboratory testing.'],
+  MNT: ['Eng. Sayed Hamam', 'Maintenance of the machines, lines and equipment.'],
+  QMS: ['Eng. Mohammed Samir', 'Quality management system: ISO, audits, documents and training.'],
+  QC: ['Eng. Ahmed Abdul Wahab', 'Quality control on the lines and of incoming materials.'],
+  HSE: ['Mr. Mahmoud Mashhoud', 'Health, safety and environment.'],
+  ADM: ['Mr. Sharif Mahran', 'Site services: buildings, electricity, water, fuel, cleaning, buffet and car licences.'],
+  STR: ['Plant director', 'Large one-off projects for the plant as a whole. Not a cost centre: listed apart and decided separately.'],
+}
+const CHANGES = (base) => [
+  "The ledger accounts and the " + base + " figures are finance's own. The " + base + " total is unchanged. Only the budget owner of some accounts is different.",
+  "Production was one cost centre in finance's sheet. It is now three: filling, brake fluids and coolants manufacturing, and engine oil blending. The two manufacturing units make the product and filling packs it, so each now carries its own accounts.",
+  'Admin and Maintenance are now budget owners of their own, so the accounts they run moved to them.',
+  'The rule used: each account sits with the function that controls the spending and is measured on it. For example, electricity, water and fuel are with Admin and not with Maintenance, because Maintenance is measured on reducing consumption and so does not also hold the bill.',
+]
+const WORDS = ['QMS = quality management system.  QC = quality control.  HSE = health, safety and environment.  R&D = research and development.  SKU = one product in one pack size.']
 // which GL does a card look like? shared words between the card and the GL name, Arabic or English
 const words = (s) => String(s || '').toLowerCase().split(/[^\p{L}\p{N}]+/u).map(w => (w.length > 4 && w.startsWith('ال') ? w.slice(2) : w)).filter(w => w.length >= 3 && !/^\d+$/.test(w) && !['plant', 'lab', 'qhse', 'مصروف'].includes(w))
 const TYPE_GL = { opex_maintenance: '3404002', opex_consumables: '3409007' } // the card's biggest running cost points at finance's usual GL for it
@@ -95,13 +115,13 @@ export default function GLs({ t, lang, profile, refd, deps: allDeps, home, show 
       return { gl: l.gl_code || '', name: l.name, base: p.b ? Number(p.b.amount) : 0, next, over: next != null && ask > next ? ask - next : 0, note: next != null && ask > next ? 'Requests ask ' + fmt(ask) + ', ' + fmt(ask - next) + ' above this account.' : old ? '' : (p.n?.note || ''), cards: cards.map(a => a.title + ' (' + fmt(opexYear(a)) + ')').join('\n') } }).filter(r => r.base || r.next || r.cards)
     const fresh = cs.filter(a => !glOf(a) && opexYear(a) > 0).map(a => ({ name: a.title, next: opexYear(a), note: Number(a.capex_amount) > 0 ? 'Running cost of a purchase on the CAPEX tab.' : '' }))
     const capex = cs.filter(a => Number(a.capex_amount) > 0 || a.quote_decides).map(a => ({ title: a.title, what: a.what_text || '', cls: a.capex_class ? t('c_' + a.capex_class) : '', amount: Number(a.capex_amount) || 0, quarter: a.quarter || '', status: t(a.status), opex: opexYear(a) || null, note: a.quote_decides && !Number(a.capex_amount) ? 'No quote yet' : '' }))
-    return { code: d.code || String(d.id), name: d.name_en, strategic: d.code === 'STR', opex, fresh, capex }
+    return { code: d.code || String(d.id), name: d.name_en, head: OWNERS[d.code]?.[0] || '', does: OWNERS[d.code]?.[1] || '', strategic: d.code === 'STR', opex, fresh, capex }
   }
   const excelOut = async (list, file) => {
     if (busy) return; setBusy(true)
     try { const ExcelJS = (await import('exceljs')).default, { buildBook } = await import('./xl')
       const data = list.map(depData).filter(x => x.opex.length || x.fresh.length || x.capex.length); if (!data.length) { show(t('gl_none')); return }
-      const wb = buildBook(ExcelJS, data, { base, next, date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), scope: 'Plant' })
+      const wb = buildBook(ExcelJS, data, { base, next, date: new Date().toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }), scope: 'Plant', changes: list.length > 1 ? CHANGES(base) : [], words: WORDS })
       const url = URL.createObjectURL(new Blob([await wb.xlsx.writeBuffer()], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' })), a = document.createElement('a')
       a.href = url; a.download = file; document.body.appendChild(a); a.click(); a.remove(); setTimeout(() => URL.revokeObjectURL(url), 2000)
     } catch (e) { show(String(e.message || e)) } finally { setBusy(false) }
